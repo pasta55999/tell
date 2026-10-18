@@ -55,23 +55,22 @@ def render() -> None:
     material = f[f["classification"] != "observation"]
     open_n = int((~material["status"].isin(["verified", "dismissed"])).sum())
     disc_total = f[f["classification"] == "discrepancy"]["estimated_impact"].fillna(0).sum()
-    c.hero([("Findings", str(len(f)), f"{len(material)} material · {len(f) - len(material)} observations"),
-            ("High severity", str(int(f["severity"].isin(["critical", "high"]).sum())), "verify these first", theme.CORAL),
+    c.hero([("Material findings", str(len(material)), f"{int(f['severity'].isin(['critical', 'high']).sum())} high severity · {len(f) - len(material)} observations", theme.CORAL),
             ("Quantified discrepancies", c.money(disc_total, cur), "reported vs supported values", theme.VIOLET),
-            ("Unreviewed", str(int((f["status"] == "detected").sum())), f"{open_n} open · {len(f) - open_n} closed", theme.AMBER if open_n else theme.EMERALD)], small=True)
+            ("Open", str(open_n), f"{int((f['status'] == 'detected').sum())} not yet reviewed", theme.AMBER if open_n else theme.EMERALD)], small=True)
 
     # ---------------------------------------------------------------- controls
-    f1, f2, f3, f4, f5 = st.columns([3, 2, 2, 2, 2])
+    f1, f2, f3, f4 = st.columns([4, 2, 2, 1])
     with f1:
         q = st.text_input("Search", placeholder="Search title, SKU, month or rule…", label_visibility="collapsed", key="fd_q")
     with f2:
         sev_filter = st.multiselect("Severity", list(SEV_ORDER), default=[], placeholder="All severities", label_visibility="collapsed")
     with f3:
-        cls_filter = st.multiselect("Type", list(theme.CLASS_LABELS), default=[], format_func=lambda k: theme.CLASS_LABELS[k], placeholder="All types", label_visibility="collapsed")
-    with f4:
-        status_filter = st.multiselect("Status", list(theme.STATUS_LABELS), default=[], format_func=lambda k: theme.STATUS_LABELS[k], placeholder="Any status", label_visibility="collapsed")
-    with f5:
         sort = st.selectbox("Sort", ["Severity", "Impact", "Period", "Category"], label_visibility="collapsed")
+    with f4:
+        with st.popover("More", width="stretch"):
+            cls_filter = st.multiselect("Type", list(theme.CLASS_LABELS), default=[], format_func=lambda k: theme.CLASS_LABELS[k], placeholder="All types")
+            status_filter = st.multiselect("Status", list(theme.STATUS_LABELS), default=[], format_func=lambda k: theme.STATUS_LABELS[k], placeholder="Any status")
     view = f.copy()
     if q:
         ql = q.lower()
@@ -89,7 +88,7 @@ def render() -> None:
     elif sort == "Category":
         view = view.assign(_s=view["severity"].map(SEV_ORDER)).sort_values(["category", "_s"]).drop(columns="_s")
     active = [x for x in [f'"{q}"' if q else "", ", ".join(sev_filter), ", ".join(theme.CLASS_LABELS[k] for k in cls_filter), ", ".join(theme.STATUS_LABELS[k] for k in status_filter)] if x]
-    c.note(f"{len(view)} of {len(f)} findings" + (" · " + " · ".join(active) if active else "") + f" · sorted by {sort.lower()}")
+    c.note(f"{len(view)} of {len(f)} findings" + (" · " + " · ".join(active) if active else ""))
 
     # ---------------------------------------------------------------- split view
     left, right = st.columns([5, 9], gap="large")

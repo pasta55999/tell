@@ -84,7 +84,7 @@ CSS = f"""
 html, body, [class*="css"], .stApp, .stMarkdown {{ font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; color: var(--tell-ink); font-feature-settings: 'cv11', 'ss01'; }}
 .stApp {{ background: radial-gradient(1100px 520px at 18% -8%, rgba(198,245,107,0.10), transparent 60%), radial-gradient(900px 500px at 95% 10%, rgba(159,177,255,0.08), transparent 60%), var(--tell-canvas); }}
 .tell-serif {{ font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-weight: 400; letter-spacing: -0.01em; }}
-.block-container {{ padding-top: 1.6rem; padding-bottom: 4rem; max-width: 1280px; }}
+.block-container {{ padding-top: 1.4rem; padding-bottom: 5rem; max-width: 1200px; }}
 .tell-num, .tell-kpi .value, div[data-testid="stDataFrame"] {{ font-variant-numeric: tabular-nums; }}
 
 /* ---------- typography scale ---------- */
@@ -101,9 +101,9 @@ h3 {{ font-size: 1rem !important; font-weight: 600 !important; margin: 0.9rem 0 
 .tell-meta .dot {{ width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; }}
 
 /* ---------- section header ---------- */
-.tell-section {{ display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 1.6rem 0 0.6rem 0; padding-bottom: 8px; border-bottom: 1px solid var(--tell-line); }}
+.tell-section {{ display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 2.2rem 0 0.9rem 0; padding-bottom: 10px; border-bottom: 1px solid var(--tell-line); }}
 .tell-section .title {{ font-size: 1.08rem; font-weight: 650; color: var(--tell-ink); letter-spacing: -0.01em; }}
-.tell-section .hint {{ color: var(--tell-muted); font-size: 0.8rem; }}
+.tell-section .hint {{ color: var(--tell-muted); font-size: 0.78rem; max-width: 46ch; text-align: right; }}
 
 /* ---------- KPI module ---------- */
 .tell-kpi {{ position: relative; background: var(--tell-glass); backdrop-filter: blur(10px); border: 1px solid var(--tell-line); border-radius: var(--tell-radius); padding: 14px 16px 12px 18px; min-height: 104px; }}
@@ -116,7 +116,7 @@ h3 {{ font-size: 1rem !important; font-weight: 600 !important; margin: 0.9rem 0 
 .tell-kpi.plain::before {{ display: none; }}
 
 /* ---------- pills & tags ---------- */
-.tell-pill {{ display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-right: 6px; vertical-align: middle; line-height: 1.5; }}
+.tell-pill {{ display: inline-block; font-size: 0.64rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-right: 6px; vertical-align: middle; line-height: 1.5; }}
 .tell-pill.outline {{ background: transparent; border: 1px solid var(--tell-line-strong); color: var(--tell-ink-soft); }}
 .tell-chip {{ display: inline-block; font-size: 0.78rem; padding: 2px 10px; border-radius: 999px; background: var(--tell-surface-alt); color: var(--tell-ink-soft); margin-right: 6px; }}
 
@@ -130,7 +130,7 @@ h3 {{ font-size: 1rem !important; font-weight: 600 !important; margin: 0.9rem 0 
 .tell-row.flat {{ border: none; border-bottom: 1px solid var(--tell-line); border-radius: 0; background: transparent; padding-left: 14px; margin-bottom: 0; }}
 .tell-row.flat:hover {{ box-shadow: none; background: var(--tell-surface); }}
 
-.tell-divider {{ border-top: 1px solid var(--tell-line); margin: 1.4rem 0; }}
+.tell-divider {{ border-top: 1px solid var(--tell-line); margin: 2rem 0; }}
 .tell-panel {{ background: var(--tell-glass); backdrop-filter: blur(10px); border: 1px solid var(--tell-line); border-radius: var(--tell-radius); padding: 16px 18px; }}
 .tell-panel.tint {{ background: var(--tell-cobalt-soft); border-color: rgba(159,177,255,0.3); }}
 .tell-panel.emerald {{ background: {EMERALD_SOFT}; border-color: rgba(95,212,166,0.3); }}
@@ -152,7 +152,7 @@ h3 {{ font-size: 1rem !important; font-weight: 600 !important; margin: 0.9rem 0 
 .stButton > button, .stDownloadButton > button, .stFormSubmitButton > button {{ border-radius: 999px; border: 1px solid var(--tell-line-strong); background: var(--tell-glass); color: var(--tell-ink); font-weight: 550; min-height: 38px; padding-left: 16px; padding-right: 16px; transition: background .15s, border-color .15s, color .15s, box-shadow .15s; }}
 .stButton > button:hover, .stDownloadButton > button:hover, .stFormSubmitButton > button:hover {{ border-color: rgba(198,245,107,0.5); color: var(--tell-lime); background: var(--tell-lime-soft); }}
 .stButton > button:focus-visible, .stDownloadButton > button:focus-visible {{ outline: 2px solid var(--tell-lime); outline-offset: 2px; }}
-.stButton > button[kind="primary"], .stFormSubmitButton > button[kind="primary"], .stDownloadButton > button[kind="primary"] {{ background: var(--tell-lime); border-color: var(--tell-lime); color: #0B0F1A !important; font-weight: 650; box-shadow: 0 8px 28px rgba(198,245,107,0.22); }}
+.stButton > button[kind="primary"], .stFormSubmitButton > button[kind="primary"], .stDownloadButton > button[kind="primary"] {{ background: var(--tell-lime); border-color: var(--tell-lime); color: #0B0F1A !important; font-weight: 650; box-shadow: 0 6px 20px rgba(198,245,107,0.14); }}
 .stButton > button[kind="primary"] *, .stFormSubmitButton > button[kind="primary"] *, .stDownloadButton > button[kind="primary"] * {{ color: #0B0F1A !important; }}
 .stButton > button[kind="primary"]:hover, .stFormSubmitButton > button[kind="primary"]:hover {{ background: #D6FF86; border-color: #D6FF86; box-shadow: 0 10px 32px rgba(198,245,107,0.32); }}
 .stButton > button:disabled {{ opacity: .5; }}
@@ -177,7 +177,8 @@ section[data-testid="stSidebar"] {{ background: {NAVY}; border-right: 1px solid 
 section[data-testid="stSidebar"] .block-container {{ padding-top: 1.3rem; }}
 section[data-testid="stSidebar"] * {{ color: {NAVY_TEXT}; }}
 .tell-wordmark {{ display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }}
-.tell-wordmark .name {{ font-size: 1.5rem; font-weight: 700; letter-spacing: -0.03em; color: #fff; }}
+.tell-wordmark .name {{ font-size: 1.45rem; font-weight: 700; letter-spacing: -0.03em; color: #fff; }}
+.tell-wordmark {{ margin-bottom: 18px; }}
 .tell-tagline {{ font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 1.02rem; color: {LIME}; margin: 0 0 18px 38px; opacity: .92; }}
 .tell-side-label {{ font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: {NAVY_MUTED}; font-weight: 700; margin: 14px 0 6px 2px; }}
 section[data-testid="stSidebar"] a[data-testid="stPageLink-NavLink"] {{ padding: 7px 10px; border-radius: 7px; margin: 1px 0; transition: background .12s; }}
@@ -198,13 +199,14 @@ section[data-testid="stSidebar"] div[data-baseweb="select"] svg {{ fill: {NAVY_M
 
 
 /* ---------- v3: editorial composition ---------- */
-.tell-identity {{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 22px; padding-bottom: 14px; border-bottom: 1px solid var(--tell-line-strong); margin-bottom: 4px; }}
+.tell-identity {{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; padding-bottom: 12px; margin-bottom: 4px; }}
+.tell-identity .name {{ flex: 0 0 100%; }}
 .tell-identity .name {{ font-size: 1.9rem; font-weight: 750; letter-spacing: -0.03em; color: var(--tell-ink); line-height: 1.05; }}
-.tell-identity .fact {{ font-size: 0.78rem; color: var(--tell-ink-soft); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }}
-.tell-identity .fact b {{ color: var(--tell-ink); font-weight: 700; }}
-.tell-stage {{ display: flex; flex-wrap: wrap; gap: 0; margin: 10px 0 4px 0; border: 1px solid var(--tell-line); border-radius: 12px; overflow: hidden; background: var(--tell-glass); backdrop-filter: blur(10px); }}
-.tell-stage .step {{ flex: 1 1 150px; padding: 8px 12px; font-size: 0.74rem; color: var(--tell-muted); border-right: 1px solid var(--tell-line); display: flex; gap: 8px; align-items: center; }}
-.tell-stage .step:last-child {{ border-right: none; }}
+.tell-identity .fact {{ font-size: 0.84rem; color: var(--tell-muted); font-weight: 500; }}
+.tell-identity .fact b {{ color: var(--tell-ink-soft); font-weight: 500; }}
+.tell-identity .fact + .fact::before {{ content: "·"; margin-right: 12px; color: var(--tell-muted); }}
+.tell-stage {{ display: flex; flex-wrap: wrap; gap: 0; margin: 6px 0 4px 0; border: 1px solid var(--tell-line); border-radius: 12px; overflow: hidden; background: transparent; }}
+.tell-stage .step {{ flex: 1 1 150px; padding: 9px 14px; font-size: 0.76rem; color: var(--tell-muted); display: flex; gap: 8px; align-items: center; }}
 .tell-stage .step .n {{ width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--tell-line-strong); display: inline-flex; align-items: center; justify-content: center; font-size: 0.66rem; font-weight: 700; flex-shrink: 0; }}
 .tell-stage .step.done {{ color: var(--tell-ink); }}
 .tell-stage .step.done .n {{ background: var(--tell-emerald); border-color: var(--tell-emerald); color: #0B0F1A; }}
@@ -215,14 +217,14 @@ section[data-testid="stSidebar"] div[data-baseweb="select"] svg {{ fill: {NAVY_M
 
 .tell-brief {{ border-top: 2px solid var(--tell-lime); padding-top: 14px; }}
 .tell-brief .kicker {{ font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tell-lime); font-weight: 700; }}
-.tell-brief .lede {{ font-size: 1.35rem; font-weight: 650; line-height: 1.3; letter-spacing: -0.015em; color: var(--tell-ink); margin: 6px 0 14px 0; max-width: 60ch; }}
+.tell-brief .lede {{ font-size: 1.3rem; font-weight: 600; line-height: 1.35; letter-spacing: -0.015em; color: var(--tell-ink); margin: 8px 0 18px 0; max-width: 56ch; }}
 .tell-brief .lede em {{ font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-weight: 400; font-size: 1.18em; color: var(--tell-coral); }}
-.tell-brief .item {{ display: grid; grid-template-columns: 26px 1fr; gap: 10px; padding: 9px 0; border-top: 1px solid var(--tell-line); font-size: 0.9rem; line-height: 1.5; color: var(--tell-ink); }}
+.tell-brief .item {{ display: grid; grid-template-columns: 26px 1fr; gap: 10px; padding: 12px 0; border-top: 1px solid var(--tell-line); font-size: 0.9rem; line-height: 1.55; color: var(--tell-ink-soft); }}
 .tell-brief .item .n {{ font-size: 0.72rem; font-weight: 700; color: var(--tell-muted); padding-top: 3px; font-variant-numeric: tabular-nums; }}
 .tell-brief .item .tag {{ font-size: 0.66rem; letter-spacing: 0.07em; text-transform: uppercase; font-weight: 700; margin-right: 8px; }}
 .tell-brief .item .ref {{ color: var(--tell-muted); font-size: 0.76rem; margin-left: 6px; white-space: nowrap; }}
 
-.tell-hero {{ display: flex; flex-wrap: wrap; gap: 22px 36px; align-items: flex-end; padding: 6px 0 10px 0; }}
+.tell-hero {{ display: flex; flex-wrap: wrap; gap: 22px 40px; align-items: flex-end; padding: 6px 0 14px 0; }}
 .tell-hero .fig {{ min-width: 0; }}
 .tell-hero .fig .k {{ font-size: 0.7rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--tell-muted); font-weight: 650; }}
 .tell-hero .fig .v {{ font-size: clamp(1.4rem, 2vw, 2.1rem); font-weight: 750; letter-spacing: -0.03em; line-height: 1.05; color: var(--tell-ink); font-variant-numeric: tabular-nums; margin-top: 2px; }}
@@ -245,10 +247,10 @@ section[data-testid="stSidebar"] div[data-baseweb="select"] svg {{ fill: {NAVY_M
 .tell-timeline .ev .when {{ font-size: 0.72rem; color: var(--tell-muted); letter-spacing: 0.04em; text-transform: uppercase; font-weight: 650; }}
 .tell-timeline .ev .what {{ margin-top: 1px; line-height: 1.45; }}
 
-.tell-signal {{ display: grid; grid-template-columns: 6px 1fr auto; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--tell-line); align-items: start; }}
-.tell-signal .bar {{ width: 6px; border-radius: 3px; background: var(--sig-color, var(--tell-line-strong)); align-self: stretch; }}
-.tell-signal .t {{ font-size: 0.9rem; font-weight: 600; color: var(--tell-ink); line-height: 1.35; }}
-.tell-signal .m {{ font-size: 0.8rem; color: var(--tell-ink-soft); margin-top: 2px; line-height: 1.45; }}
+.tell-signal {{ display: grid; grid-template-columns: 4px 1fr auto; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--tell-line); align-items: start; }}
+.tell-signal .bar {{ width: 4px; border-radius: 3px; background: var(--sig-color, var(--tell-line-strong)); align-self: stretch; }}
+.tell-signal .t {{ font-size: 0.88rem; font-weight: 550; color: var(--tell-ink); line-height: 1.35; }}
+.tell-signal .m {{ font-size: 0.76rem; color: var(--tell-muted); margin-top: 3px; line-height: 1.45; }}
 .tell-signal .impact {{ text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 0.95rem; white-space: nowrap; }}
 .tell-signal .impact small {{ display: block; font-size: 0.68rem; color: var(--tell-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }}
 
@@ -275,11 +277,11 @@ div[data-baseweb="segmented-control"] {{ background: var(--tell-surface-alt); bo
 .stTextInput input, .stSelectbox div[data-baseweb="select"] > div {{ border-radius: 8px; }}
 
 /* ---------- brand masthead ---------- */
-.tell-masthead {{ display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px 10px 16px; border: 1px solid var(--tell-line); border-radius: 999px; background: var(--tell-glass); backdrop-filter: blur(12px); margin-bottom: 22px; }}
+.tell-masthead {{ display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 4px 0 14px 0; border-bottom: 1px solid var(--tell-line); margin-bottom: 26px; }}
 .tell-masthead .brand {{ display: flex; align-items: center; gap: 10px; }}
 .tell-masthead .brand .name {{ font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; color: #fff; }}
-.tell-masthead .brand .tag {{ font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 1.05rem; color: var(--tell-lime); margin-left: 6px; }}
-.tell-masthead .status {{ display: inline-flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--tell-ink-soft); padding: 5px 12px; border-radius: 999px; border: 1px solid var(--tell-line); background: rgba(255,255,255,0.03); }}
+.tell-masthead .brand .tag {{ font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 1.2rem; color: var(--tell-lime); opacity: .9; }}
+.tell-masthead .status {{ display: inline-flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--tell-muted); }}
 .tell-masthead .status .dot {{ width: 7px; height: 7px; border-radius: 50%; background: var(--tell-lime); box-shadow: 0 0 10px var(--tell-lime); }}
 .tell-masthead .status b {{ color: var(--tell-ink); font-weight: 600; }}
 .tell-hero-title {{ font-size: clamp(1.6rem, 2.6vw, 2.4rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; color: #fff; margin: 4px 0 6px 0; }}

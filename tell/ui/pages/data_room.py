@@ -47,8 +47,8 @@ def _sources(conn, brand) -> None:
     rules = set(f["rule_id"]) if not f.empty else set()
     fin = data.financials(bid, h)
     hist = repo.import_history(conn, bid)
-    c.hero([("Source files", str(len(hist)), "imported into this deal"), ("Records", f"{sum(counts.values()):,}", " · ".join(f"{DATASET_LABELS[k]} {v:,}" for k, v in counts.items() if v)[:80] + "…"),
-            ("Coverage", f"{sc}/100", label + (" — every dataset spans the order period" if sc >= 95 else " — gaps listed below"), theme.EMERALD if sc >= 95 else theme.AMBER),
+    c.hero([("Records", f"{sum(counts.values()):,}", f"{len(hist)} source file(s)"),
+            ("Coverage", f"{sc}/100", label + (" · every dataset spans the order period" if sc >= 95 else " · gaps listed below"), theme.EMERALD if sc >= 95 else theme.AMBER),
             ("Data hash", h, "changes whenever source data changes")], small=True)
 
     c.section("Do the sources agree with each other?", "Each row compares two independent sources for the same fact")

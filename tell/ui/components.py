@@ -159,15 +159,15 @@ def finding_row(f: pd.Series, cur: str, flat: bool = False) -> None:
 
 def masthead(status_html: str) -> None:
     """Brand strip at the top of every page: signal mark, wordmark, tagline and a live status chip."""
-    st.markdown(f'<div class="tell-masthead"><div class="brand">{theme.SIGNAL_ICON}<span class="name">Tell</span>'
-                f'<span class="tag">Every business has a tell.</span></div><div class="status"><span class="dot"></span>{status_html}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="tell-masthead"><div class="brand"><span class="tag">Every business has a tell.</span></div>'
+                f'<div class="status"><span class="dot"></span>{status_html}</div></div>', unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------- v3 editorial blocks
 
 def identity(name: str, facts: list[tuple[str, str]]) -> None:
     """Acquisition identity strip: big name plus uppercase key facts."""
-    fs = "".join(f'<span class="fact">{esc(k)} <b>{esc(v)}</b></span>' for k, v in facts if v)
+    fs = "".join(f'<span class="fact">{(esc(k) + " ") if k else ""}<b>{esc(v)}</b></span>' for k, v in facts if v)
     st.markdown(f'<div class="tell-identity"><span class="name">{esc(name)}</span>{fs}</div>', unsafe_allow_html=True)
 
 
@@ -218,11 +218,12 @@ def timeline(events: list[tuple[str, str, str | None]]) -> None:
     st.markdown(f'<div class="tell-timeline">{items}</div>', unsafe_allow_html=True)
 
 
-def signal(f: pd.Series, cur: str) -> None:
+def signal(f: pd.Series, cur: str, compact: bool = False) -> None:
     color = theme.SEVERITY_BAR.get(f["severity"], theme.LINE_STRONG)
     impact = money(f["estimated_impact"], cur) if pd.notna(f.get("estimated_impact")) else "—"
-    st.markdown(f'<div class="tell-signal" style="--sig-color:{color}"><div class="bar"></div><div><div class="t">{esc(f["title"])}</div>'
-                f'<div class="m">{severity_pill(f["severity"])}{class_pill(f["classification"])}{esc(f["summary"])}</div></div>'
+    meta = (f'<div class="m">{esc(f["severity"])} · {esc(theme.CLASS_LABELS.get(f["classification"], f["classification"]).lower())}</div>' if compact
+            else f'<div class="m">{severity_pill(f["severity"])}{class_pill(f["classification"])}{esc(f["summary"])}</div>')
+    st.markdown(f'<div class="tell-signal" style="--sig-color:{color}"><div class="bar"></div><div><div class="t">{esc(f["title"])}</div>{meta}</div>'
                 f'<div class="impact">{esc(impact)}<small>{"est. impact" if impact != "—" else "not quantified"}</small></div></div>', unsafe_allow_html=True)
 
 

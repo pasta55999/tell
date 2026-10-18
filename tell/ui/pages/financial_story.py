@@ -29,10 +29,9 @@ def render() -> None:
     h1, h2 = fin.head(len(fin) // 2), fin.tail(len(fin) // 2)
     gm = lambda d: (d["gross_sales"].sum() - d["cogs"].sum()) / d["gross_sales"].sum() * 100  # noqa: E731
 
-    c.hero([("Gross sales", c.money(t["gross_sales"], cur), f"{t['orders_completed']:,} completed orders · GMS {c.money(t['gms'], cur)} less {c.money(t['discounts'], cur)} discounts"),
-            ("Net sales", c.money(t["net_sales"], cur), f"after {c.money(t['refunds_posted'], cur)} refunds posted", theme.EMERALD),
-            ("Gross margin", c.pct(t["gross_margin_pct"]), f"H2 vs H1 {gm(h2) - gm(h1):+.1f}pp", theme.AMBER if gm(h2) - gm(h1) <= -1 else theme.INK),
-            ("Contribution proxy", c.money(t["contribution_proxy"], cur), "gross profit − advertising · not EBITDA")])
+    c.hero([("Net sales", c.money(t["net_sales"], cur), f"{t['orders_completed']:,} orders · gross {c.money(t['gross_sales'], cur)} less {c.money(t['refunds_posted'], cur)} refunds", theme.EMERALD),
+            ("Gross margin", c.pct(t["gross_margin_pct"]), f"second half {gm(h2) - gm(h1):+.1f}pp vs first", theme.AMBER if gm(h2) - gm(h1) <= -1 else theme.INK),
+            ("Contribution proxy", c.money(t["contribution_proxy"], cur), "gross profit less advertising · not EBITDA")])
 
     view = st.segmented_control("View", ["Where the numbers diverge", "The financial picture", "Monthly ledger", "Definitions"], default="Where the numbers diverge", label_visibility="collapsed")
 

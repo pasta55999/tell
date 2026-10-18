@@ -15,14 +15,14 @@ state.ensure_state()
 
 # (key / url slug, title, icon, renderer, group)
 PAGES = [
-    ("deals", "Deals", ":material/work:", deals.render, "Pipeline"),
-    ("overview", "Overview", ":material/dashboard:", overview.render, "Active deal"),
-    ("financial_story", "Financial story", ":material/account_balance:", financial_story.render, "Active deal"),
-    ("operations", "Operations", ":material/inventory_2:", operations.render, "Active deal"),
-    ("findings", "Findings", ":material/troubleshoot:", findings.render, "Investigation"),
-    ("questions", "Seller questions", ":material/help_outline:", questions.render, "Investigation"),
-    ("reports", "Reports", ":material/description:", reports.render, "Investigation"),
-    ("copilot", "Ask the records", ":material/forum:", copilot.render, "Investigation"),
+    ("deals", "Deals", ":material/work:", deals.render, "Deal"),
+    ("overview", "Overview", ":material/dashboard:", overview.render, "Deal"),
+    ("financial_story", "Financial story", ":material/account_balance:", financial_story.render, "Deal"),
+    ("operations", "Operations", ":material/inventory_2:", operations.render, "Deal"),
+    ("findings", "Findings", ":material/troubleshoot:", findings.render, "Investigate"),
+    ("questions", "Seller questions", ":material/help_outline:", questions.render, "Investigate"),
+    ("reports", "Reports", ":material/description:", reports.render, "Investigate"),
+    ("copilot", "Ask the records", ":material/forum:", copilot.render, "Investigate"),
     ("data_room", "Data room", ":material/folder_open:", data_room.render, "Sources"),
 ]
 
@@ -31,12 +31,10 @@ nav = st.navigation(pages, position="hidden")
 st.session_state.pages = {key: page for (key, _, _, _, _), page in zip(PAGES, pages)}
 
 with st.sidebar:
-    st.markdown(f'<div class="tell-wordmark">{theme.SIGNAL_ICON}<span class="name">{config.APP_NAME}</span></div>'
-                f'<div class="tell-tagline">{config.TAGLINE}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="tell-wordmark">{theme.SIGNAL_ICON}<span class="name">{config.APP_NAME}</span></div>', unsafe_allow_html=True)
     conn = state.conn()
     brands = repo.list_brands(conn)
     if brands:
-        st.markdown('<div class="tell-side-label">Active deal</div>', unsafe_allow_html=True)
         ids = [b["id"] for b in brands]
         names = {b["id"]: b["name"] + (" · demo" if b["is_demo"] else "") for b in brands}
         chosen = st.selectbox("Brand", ids, index=ids.index(st.session_state.brand_id), format_func=lambda i: names[i], label_visibility="collapsed")
@@ -64,14 +62,12 @@ with st.sidebar:
             st.markdown(f'<div class="tell-nav-active" aria-current="page"><span class="material-symbols-rounded">{icon.strip(":").split("/")[1]}</span>{title}</div>', unsafe_allow_html=True)
         else:
             st.page_link(page, label=title, icon=icon)
-    st.markdown('<div class="tell-divider"></div>', unsafe_allow_html=True)
-    st.markdown('<div class="tell-side-foot"><div class="avatar">DA</div><div><div class="who">Deal analyst</div><div class="role">Local workspace · offline</div></div></div>', unsafe_allow_html=True)
-    st.markdown('<div class="tell-note" style="margin-top:10px">Decision support, not approval. Findings are detected discrepancies or suspected risks until verified.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="tell-divider"></div><div class="tell-note">Local workspace · offline · decision support, not approval.</div>', unsafe_allow_html=True)
 
 brand = state.brand()
 run = state.run()
 if brand is not None:
-    status = (f"<b>{c.esc(brand['name'])}</b> · run {run['id']} · {run['finding_count']} findings · {str(run['finished_at'])[:10]}" if run is not None
+    status = (f"<b>{c.esc(brand['name'])}</b> · run {run['id']} · {run['finding_count']} findings" if run is not None
               else f"<b>{c.esc(brand['name'])}</b> · no analysis yet")
 else:
     status = "No active deal"

@@ -42,8 +42,7 @@ def _products(bid: int, cur: str, h: str) -> None:
     gp_total = prod["gross_profit"].sum()
     rr_threshold = max(10.0, 2 * portfolio_rr)
     flagged_ret = prod[(prod["units"] >= 30) & (prod["return_rate_pct"] >= rr_threshold)]
-    c.hero([("Who carries the business", f"{top['revenue_share_pct']:.0f}%", f"{top['sku']} {top['name']} · top-3 {prod.head(3)['revenue_share_pct'].sum():.0f}% of gross sales", theme.VIOLET if top["revenue_share_pct"] >= 25 else theme.INK),
-            ("…and the profit", f"{top['gross_profit'] / gp_total * 100:.0f}%", f"{top['sku']} share of gross profit", theme.VIOLET),
+    c.hero([("One SKU carries", f"{top['revenue_share_pct']:.0f}%", f"of gross sales and {top['gross_profit'] / gp_total * 100:.0f}% of gross profit · {top['sku']}", theme.VIOLET if top["revenue_share_pct"] >= 25 else theme.INK),
             ("Range", f"{len(prod)} SKUs", f"{int(prod['units'].sum()):,} units · portfolio margin {portfolio_gm:.1f}%"),
             ("Returns", f"{portfolio_rr:.1f}%", f"{len(flagged_ret)} SKU(s) above {rr_threshold:.0f}%", theme.CORAL if len(flagged_ret) else theme.EMERALD)], small=True)
     a, b = st.columns([3, 2], gap="large")
@@ -87,8 +86,7 @@ def _refunds(bid: int, cur: str, h: str) -> None:
         c.empty_state("No refunds", "Import refunds linked to orders to see cohort and delay patterns.")
         return
     late = lags[lags["lag_days"] > 45]
-    c.hero([("Refunds", f"{len(lags):,}", f"{c.money(lags['amount'].sum(), cur)} · {lags['amount'].sum() / fin['gross_sales'].sum() * 100:.1f}% of gross sales"),
-            ("Typical delay", f"{lags['lag_days'].median():.0f} days", "median order-to-refund"),
+    c.hero([("Refunds", f"{len(lags):,}", f"{c.money(lags['amount'].sum(), cur)} · {lags['amount'].sum() / fin['gross_sales'].sum() * 100:.1f}% of gross sales · median delay {lags['lag_days'].median():.0f} days"),
             ("Posted > 45 days after sale", f"{len(late)}", f"{c.money(late['amount'].sum(), cur)} · {late['amount'].sum() / lags['amount'].sum() * 100:.0f}% of refund value", theme.CORAL if len(late) >= 8 else theme.INK),
             ("Reason most cited", lags["reason"].value_counts().index[0], f"{lags['reason'].value_counts().iloc[0]} refunds")], small=True)
     a, b = st.columns([3, 2], gap="large")
@@ -120,8 +118,7 @@ def _advertising(bid: int, cur: str, h: str) -> None:
     with_attr = ch[ch["attribution_available"]]
     max_var = fin["ad_variance_pct"].abs().max() if fin["ad_variance_pct"].notna().any() else None
     c.hero([("Spend", c.money(total, cur), f"{total / fin['gross_sales'].sum() * 100:.1f}% of gross sales · {len(ch)} channels"),
-            ("Verified return", f"{len(with_attr)} of {len(ch)} channels", ", ".join(f"{r['channel']} {r['roas']:.1f}x" for _, r in with_attr.iterrows()) or "no channel reports attribution", theme.EMERALD if len(with_attr) else theme.AMBER),
-            ("Unverified spend", c.money(ch[~ch['attribution_available']]['spend'].sum(), cur), "channels without attributed revenue", theme.VIOLET),
+            ("Return verified for", f"{len(with_attr)} of {len(ch)} channels", (", ".join(f"{r['channel']} {r['roas']:.1f}x" for _, r in with_attr.iterrows()) or "no channel reports attribution") + f" · {c.money(ch[~ch['attribution_available']]['spend'].sum(), cur)} unverified", theme.EMERALD if len(with_attr) else theme.AMBER),
             ("Statement vs platform", c.pct(max_var) if max_var is not None else "n/a", "largest monthly gap to the seller's accounts", theme.CORAL if (max_var or 0) >= 10 else theme.EMERALD)], small=True)
     a, b = st.columns([3, 2], gap="large")
     with a:

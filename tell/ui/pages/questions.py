@@ -33,9 +33,8 @@ def render() -> None:
         c.panel("No questions", "The run produced no findings, so there is nothing to ask the seller yet.", "emerald")
         return
     counts = q["status"].value_counts()
-    c.hero([("To put to the seller", str(len(q)), f"{int((q['priority'] == 'high').sum())} high priority"),
-            ("Open", str(int(counts.get("pending", 0))), "awaiting the seller", theme.AMBER if counts.get("pending") else theme.EMERALD),
-            ("Answered", str(int(counts.get("answered", 0))), "response received, not yet closed", theme.VIOLET),
+    c.hero([("Open", str(int(counts.get("pending", 0))), f"of {len(q)} · {int((q['priority'] == 'high').sum())} high priority", theme.AMBER if counts.get("pending") else theme.EMERALD),
+            ("Answered", str(int(counts.get("answered", 0))), "awaiting review", theme.VIOLET),
             ("Resolved", str(int(counts.get("resolved", 0))), "closed with evidence", theme.EMERALD)], small=True)
 
     f1, f2, f3 = st.columns([3, 2, 2])

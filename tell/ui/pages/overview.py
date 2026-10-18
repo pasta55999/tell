@@ -1,14 +1,11 @@
-"""Acquisition command centre: identity, workflow stage, intelligence brief, the financial story,
-signals worth investigating, and the investigation trail."""
+"""Acquisition command centre: identity, the intelligence brief, the financial story,
+the signals to inspect first, and the investigation trail."""
 
 from __future__ import annotations
-
-import json
 
 import pandas as pd
 import streamlit as st
 
-from tell.analysis import metrics
 from tell.analysis.brief import TAGS, build_brief
 from tell.analysis.engine import run_analysis
 from tell.analysis.rules.revenue import attribute_variance
@@ -16,12 +13,13 @@ from tell.db import repository as repo
 from tell.ui import charts, components as c, data, state, theme
 
 TAG_COLORS = {"coral": theme.CORAL, "amber": theme.AMBER, "violet": theme.VIOLET, "slate": theme.SLATE, "emerald": theme.EMERALD, "cobalt": theme.COBALT_DEEP}
+BRIEF_ORDER = ["divergence", "concentration", "verify", "data", "clear", "next"]
 
 
 def render() -> None:
     brand = state.brand()
     if brand is None:
-        c.page_header("Acquisition overview")
+        c.page_header("Overview")
         c.empty_state("No target business yet", "Create a deal in Deals or reset the demo data to begin.")
         return
     bid, cur = int(brand["id"]), brand["reporting_currency"]
@@ -29,43 +27,25 @@ def render() -> None:
     h = data.data_hash(bid)
     fin = data.financials(bid, h)
     run = state.run()
-    counts = repo.table_counts(conn, bid)
-    sources = repo.import_history(conn, bid)
     f = data.findings(int(run["id"])) if run is not None else pd.DataFrame()
     material = f[f["classification"] != "observation"] if not f.empty else pd.DataFrame()
     open_f = material[~material["status"].isin(["verified", "dismissed"])] if not material.empty else pd.DataFrame()
     qs = repo.questions_for_run(conn, int(run["id"])) if run is not None else pd.DataFrame()
 
-    # ------------------------------------------------------------ identity + stage
+    # ------------------------------------------------------------ identity
     left, right = st.columns([4, 2], gap="large")
     with left:
-        st.markdown('<div class="tell-eyebrow">Acquisition target</div>', unsafe_allow_html=True)
-        facts = [("Sector", brand["category"] or ""), ("Market", brand["location"] or ""), ("Currency", cur),
-                 ("Period", f"{fin['period'].iloc[0]} – {fin['period'].iloc[-1]}" if not fin.empty else "no orders"),
-                 ("Sources", f"{len(sources)} file(s) · {sum(v for k, v in counts.items() if k in ('orders', 'refunds', 'seller_statements', 'ad_spend', 'inventory_snapshots', 'supplier_receipts')):,} records")]
+        facts = [("", brand["category"] or ""), ("", brand["location"] or ""), ("", cur),
+                 ("", f"{fin['period'].iloc[0]} – {fin['period'].iloc[-1]}" if not fin.empty else "no orders")]
         c.identity(brand["name"], facts)
     with right:
         with st.container(horizontal=True, horizontal_alignment="right"):
-            if st.button("Data room", key="ov_import", icon=":material/folder_open:"):
+            if st.button("Data room", key="ov_import"):
                 state.go("data_room")
-            if st.button("Run analysis", type="primary", key="ov_run", icon=":material/play_arrow:"):
+            if st.button("Run analysis", type="primary", key="ov_run"):
                 with st.spinner("Reconciling records and running rules..."):
                     st.session_state.run_id = run_analysis(conn, bid)
                 st.rerun()
-        status = (f"Run {run['id']} · {str(run['finished_at'])[:16].replace('T', ' ')} UTC · {run['finding_count']} findings" if run is not None else "No analysis yet")
-        st.markdown(f'<div class="tell-meta" style="justify-content:flex-end;margin-top:6px"><span><span class="dot" style="background:{theme.EMERALD if run is not None else theme.AMBER}"></span>{c.esc(status)}</span></div>', unsafe_allow_html=True)
-
-    reviewed = int(material["status"].isin(["verified", "dismissed", "needs_investigation"]).sum()) if not material.empty else 0
-    answered = int((qs["status"] != "pending").sum()) if not qs.empty else 0
-    c.stepper([
-        ("Import", "done" if counts["orders"] else "active", f"{len(sources)} sources"),
-        ("Analyse", "done" if run is not None else ("active" if counts["orders"] else "todo"), f"run {run['id']}" if run is not None else None),
-        ("Investigate", ("done" if not open_f.empty and reviewed == len(material) else "active" if run is not None else "todo"), f"{reviewed}/{len(material)} reviewed" if run is not None else None),
-        ("Question seller", ("partial" if answered and answered < len(qs) else "done" if qs is not None and not qs.empty and answered == len(qs) else "todo"), f"{answered}/{len(qs)} answered" if not qs.empty else None),
-        ("Report", "todo" if run is None else ("done" if repo.scalar(conn, "SELECT COUNT(*) FROM reports WHERE run_id=?", (int(run["id"]),)) else "partial"), None),
-    ])
-    if brand["is_demo"]:
-        c.note("Synthetic demo business generated by Tell. Nothing here describes a real company.")
 
     if fin.empty:
         st.write("")
@@ -80,55 +60,49 @@ def render() -> None:
             st.rerun()
         return
 
-    # ------------------------------------------------------------ intelligence brief
+    reviewed = int(material["status"].isin(["verified", "dismissed", "needs_investigation"]).sum()) if not material.empty else 0
+    answered = int((qs["status"] != "pending").sum()) if not qs.empty else 0
+    has_report = bool(repo.scalar(conn, "SELECT COUNT(*) FROM reports WHERE run_id=?", (int(run["id"]),)))
+    c.stepper([("Import", "done", None), ("Analyse", "done", None),
+               ("Investigate", "done" if material.empty or reviewed == len(material) else "active", f"{reviewed}/{len(material)}"),
+               ("Question seller", "done" if not qs.empty and answered == len(qs) else "partial" if answered else "todo", f"{answered}/{len(qs)}" if not qs.empty else None),
+               ("Report", "done" if has_report else "todo", None)])
+
+    # ------------------------------------------------------------ brief + glance
     br = build_brief(conn, bid, int(run["id"]))
     st.write("")
     bl, bres = st.columns([3, 2], gap="large")
     with bl:
-        items = [{"tag": TAGS[i["kind"]][0], "tag_color": TAG_COLORS[TAGS[i["kind"]][1]], "text": i["text"], "ref": i["ref"]} for i in br["items"]]
+        ranked = sorted(br["items"], key=lambda i: BRIEF_ORDER.index(i["kind"]))
+        keep = [i for i in ranked if i["kind"] != "clear"][:5] + [i for i in ranked if i["kind"] == "clear"][:1]
+        items = [{"tag": TAGS[i["kind"]][0], "tag_color": TAG_COLORS[TAGS[i["kind"]][1]], "text": i["text"], "ref": i["ref"]} for i in keep]
         c.brief("Investment intelligence brief", br["lede"], items)
-        st.write("")
-        with st.container(horizontal=True):
-            if st.button("Open findings", key="ov_f", icon=":material/troubleshoot:"):
-                state.go("findings")
-            if st.button("Seller questions", key="ov_q", icon=":material/help_outline:"):
-                state.go("questions")
-            if st.button("Diligence report", key="ov_r", icon=":material/description:"):
-                state.go("reports")
+        if len(br["items"]) > len(keep):
+            c.note(f"{len(br['items']) - len(keep)} further points appear in the report.")
     with bres:
-        t = metrics.period_totals(fin)
         rec = fin[fin["reported_revenue"].notna()]
         reported = float(rec["reported_revenue"].sum()) if not rec.empty else None
         net = float(rec["net_sales"].sum()) if not rec.empty else float(fin["net_sales"].sum())
         gap = (reported - net) if reported is not None else None
-        h1, h2 = fin.head(len(fin) // 2), fin.tail(len(fin) // 2)
-        gm = lambda d: (d["gross_sales"].sum() - d["cogs"].sum()) / d["gross_sales"].sum() * 100  # noqa: E731
         st.markdown('<div class="tell-eyebrow muted">At a glance</div>', unsafe_allow_html=True)
-        c.hero([("Seller says", c.money(reported, cur) if reported is not None else "no statements", f"{len(rec)} months reported", theme.VIOLET),
-                ("Records support", c.money(net, cur), "net sales after refunds", theme.EMERALD)])
-        c.hero([("Gap", c.signed_money(gap, cur) if gap is not None else "—", f"{gap / net * 100:+.1f}% of supported" if gap is not None and net else "", theme.CORAL if gap and abs(gap / net) >= 0.02 else theme.INK),
-                ("Gross margin", c.pct(t["gross_margin_pct"]), f"H2 vs H1 {gm(h2) - gm(h1):+.1f}pp", theme.AMBER if gm(h2) - gm(h1) <= -1 else theme.INK),
-                ("Open findings", str(len(open_f)), f"{int(open_f['severity'].isin(['critical', 'high']).sum())} high · {int((qs['status'] == 'pending').sum()) if not qs.empty else 0} questions pending", theme.CORAL if not open_f.empty else theme.EMERALD)], small=True)
-
-        c.divider()
+        c.hero([("Seller says", c.money(reported, cur) if reported is not None else "no statements", f"{len(rec)} months reported", theme.VIOLET)])
+        c.hero([("Records support", c.money(net, cur), "net sales after refunds", theme.EMERALD)])
+        c.hero([("Gap", c.signed_money(gap, cur) if gap is not None else "—", f"{gap / net * 100:+.1f}% of supported" if gap is not None and net else "", theme.CORAL if gap and abs(gap / net) >= 0.02 else theme.INK)])
+        st.write("")
         st.markdown('<div class="tell-eyebrow muted">Where to look first</div>', unsafe_allow_html=True)
-        top = open_f.head(4) if not open_f.empty else material.head(4)
+        top = open_f.head(3) if not open_f.empty else material.head(3)
         if top.empty:
             c.panel("Nothing open", "All material findings are verified or dismissed.", "emerald")
         for _, row in top.iterrows():
-            c.signal(row, cur)
-            if st.button("Inspect evidence", key=f"ov_insp_{row['id']}", icon=":material/search:"):
-                st.session_state.selected_finding = int(row["id"])
-                state.go("findings")
-        obs = f[f["classification"] == "observation"]
-        if not obs.empty:
-            c.note("Also noted, not ranked as risk: " + "; ".join(obs["title"].str.replace(r"\s*\(.*?\)", "", regex=True)) + ".")
+            c.signal(row, cur, compact=True)
+        if st.button("All findings", key="ov_findings"):
+            state.go("findings")
 
     # ------------------------------------------------------------ the financial picture
     c.divider()
-    c.section("The financial picture", "How the seller's headline becomes supported net sales, and where the months diverge")
-    main, side = st.columns([3, 2], gap="large")
+    c.section("The financial picture", "From the seller's headline to supported net sales")
     rec = fin[fin["reported_revenue"].notna()]
+    main, side = st.columns([3, 2], gap="large")
     with main:
         if rec.empty:
             c.panel("No seller statements", "Import management accounts in the Data room to reconcile headline revenue.", "tint")
@@ -137,52 +111,38 @@ def render() -> None:
     with side:
         if not rec.empty:
             breaches = rec[rec["revenue_variance_pct"].abs() >= 2]
-            rows = [(f"{r['period']}", c.signed_money(r["revenue_variance"], cur), f"{r['revenue_variance_pct']:+.1f}% · {(attribute_variance(r)[0] or 'unexplained').split(' (')[0]}", True) for _, r in breaches.iterrows()]
-            if rows:
-                st.markdown('<div class="tell-eyebrow muted">Months where the numbers diverge</div>', unsafe_allow_html=True)
-                c.ledger(rows, ("Combined overstatement", c.signed_money(float(breaches["revenue_variance"].sum()), cur)))
+            if not breaches.empty:
+                st.markdown('<div class="tell-eyebrow muted">Months that diverge</div>', unsafe_allow_html=True)
+                c.ledger([(r["period"], c.signed_money(r["revenue_variance"], cur), f"{r['revenue_variance_pct']:+.1f}%", True) for _, r in breaches.iterrows()],
+                         ("Combined", c.signed_money(float(breaches["revenue_variance"].sum()), cur)))
             else:
                 c.insight("Every reported month reconciles within tolerance.", "emerald")
             st.write("")
-        if st.button("Full financial story", key="ov_fs", icon=":material/arrow_forward:"):
+        if st.button("Financial story", key="ov_fs"):
             state.go("financial_story")
 
     # ------------------------------------------------------------ investigation trail
     c.divider()
-    c.section("Investigation trail", "Runs, discoveries, reviews and what is still to verify")
-    t1, t2, t3 = st.columns([2, 2, 3], gap="large")
+    c.section("Investigation trail")
+    t1, t2 = st.columns([2, 3], gap="large")
     with t1:
-        st.markdown('<div class="tell-eyebrow muted">Analysis runs</div>', unsafe_allow_html=True)
-        runs = repo.list_runs(conn, bid)[:5]
         events = []
-        prev_hash = None
-        for r in runs:
-            sk = json.loads(r["skipped"]) if r["skipped"] else {}
-            what = f"<b>Run {r['id']}</b> · {int(r['finding_count'])} findings · data {c.esc(r['data_hash'])}"
-            if r["label"]:
-                what += f" · {c.esc(r['label'])}"
-            if sk.get("skipped"):
-                what += f" · {len(sk['skipped'])} analyses skipped"
-            events.append((str(r["finished_at"] or r["started_at"])[:16].replace("T", " "), what, theme.EMERALD if r["status"] == "completed" else theme.CORAL))
-        c.timeline(events)
-        if len(runs) >= 2:
-            if st.button("Compare runs", key="ov_cmp"):
-                st.session_state.show_compare = True
-                state.go("findings")
+        for r in repo.list_runs(conn, bid)[:3]:
+            events.append((str(r["finished_at"] or r["started_at"])[:16].replace("T", " "), f"Run {r['id']} · {int(r['finding_count'])} findings" + (f" · {c.esc(r['label'])}" if r["label"] else ""), theme.EMERALD))
+        for _, e in repo.recent_events(conn, bid, 4).iterrows():
+            events.append((str(e["created_at"])[:16], f"{c.esc(e['kind'].capitalize())} marked <b>{c.esc(e['to_status'].replace('_', ' '))}</b> — {c.esc(str(e['subject'])[:70])}", theme.COBALT))
+        events.sort(key=lambda x: x[0], reverse=True)
+        c.timeline(events[:6])
     with t2:
-        st.markdown('<div class="tell-eyebrow muted">Reviewed evidence</div>', unsafe_allow_html=True)
-        ev = repo.recent_events(conn, bid, 6)
-        if ev.empty:
-            c.caption("No findings or questions have been reviewed yet. Status changes made in Findings and Seller questions appear here.")
-        else:
-            c.timeline([(str(e["created_at"])[:16], f"{c.esc(e['kind'].capitalize())} <b>{c.esc(e['to_status'].replace('_', ' '))}</b> — {c.esc(str(e['subject'])[:90])}" + (f"<br><span class=tell-note>{c.esc(e['note'])}</span>" if e["note"] else ""),
-                         theme.EMERALD if e["to_status"] in ("verified", "resolved") else theme.COBALT) for _, e in ev.iterrows()])
-    with t3:
         st.markdown('<div class="tell-eyebrow muted">Still to verify</div>', unsafe_allow_html=True)
-        pending = qs[qs["status"] == "pending"].head(4) if not qs.empty else pd.DataFrame()
+        pending = qs[qs["status"] == "pending"].head(3) if not qs.empty else pd.DataFrame()
         if pending.empty:
             c.caption("No pending seller questions.")
         for _, q in pending.iterrows():
-            st.markdown(c.list_item(q["priority"], q["question"], q["finding_key"] or "consolidated", theme.PRIORITY_COLORS[q["priority"]][0]), unsafe_allow_html=True)
+            st.markdown(c.list_item(q["priority"], q["question"], None, theme.PRIORITY_COLORS[q["priority"]][0]), unsafe_allow_html=True)
         if not qs.empty:
-            c.note(f"{int((qs['status'] == 'pending').sum())} of {len(qs)} questions pending · {int((qs['priority'] == 'high').sum())} high priority")
+            if st.button(f"{int((qs['status'] == 'pending').sum())} open questions", key="ov_q"):
+                state.go("questions")
+    if brand["is_demo"]:
+        st.write("")
+        c.note("Synthetic demo business. Nothing here describes a real company.")
