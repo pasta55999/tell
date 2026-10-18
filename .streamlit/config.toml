@@ -1,25 +1,25 @@
 [theme]
-base = "light"
-primaryColor = "#4F5DFF"
-backgroundColor = "#F7F8FC"
-secondaryBackgroundColor = "#EEF0F9"
-textColor = "#17213A"
-linkColor = "#4F5DFF"
-borderColor = "#E1E5EF"
-dataframeBorderColor = "#E1E5EF"
-dataframeHeaderBackgroundColor = "#EEF0F9"
-baseRadius = "8px"
-buttonRadius = "8px"
+base = "dark"
+primaryColor = "#C6F56B"
+backgroundColor = "#0B0F1A"
+secondaryBackgroundColor = "#141A2B"
+textColor = "#EEF1F8"
+linkColor = "#C6F56B"
+borderColor = "#27304A"
+dataframeBorderColor = "#27304A"
+dataframeHeaderBackgroundColor = "#141A2B"
+baseRadius = "10px"
+buttonRadius = "999px"
 font = "Inter, -apple-system, 'Segoe UI', sans-serif"
 headingFont = "Inter, -apple-system, 'Segoe UI', sans-serif"
-chartCategoricalColors = ["#4F5DFF", "#8067F8", "#0B9F78", "#F06464", "#5E6B8C", "#9FB1FF"]
+chartCategoricalColors = ["#9FB1FF", "#B9A3FF", "#5FD4A6", "#FF7A7A", "#9AA6C4", "#C6F56B"]
 
 [theme.sidebar]
-backgroundColor = "#111831"
-secondaryBackgroundColor = "#1C2546"
+backgroundColor = "#070A12"
+secondaryBackgroundColor = "#121828"
 textColor = "#E6E9F5"
-borderColor = "#27315A"
-dataframeHeaderBackgroundColor = "#1C2546"
+borderColor = "#1C2338"
+dataframeHeaderBackgroundColor = "#121828"
 
 [server]
 headless = true

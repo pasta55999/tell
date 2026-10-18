@@ -6,7 +6,7 @@ import streamlit as st
 
 from tell import config
 from tell.db import repository as repo
-from tell.ui import state, theme
+from tell.ui import components as c, state, theme
 from tell.ui.pages import copilot, data_room, deals, financial_story, findings, operations, overview, questions, reports
 
 st.set_page_config(page_title="Tell", page_icon=":material/insights:", layout="wide", initial_sidebar_state="expanded")
@@ -67,5 +67,14 @@ with st.sidebar:
     st.markdown('<div class="tell-divider"></div>', unsafe_allow_html=True)
     st.markdown('<div class="tell-side-foot"><div class="avatar">DA</div><div><div class="who">Deal analyst</div><div class="role">Local workspace · offline</div></div></div>', unsafe_allow_html=True)
     st.markdown('<div class="tell-note" style="margin-top:10px">Decision support, not approval. Findings are detected discrepancies or suspected risks until verified.</div>', unsafe_allow_html=True)
+
+brand = state.brand()
+run = state.run()
+if brand is not None:
+    status = (f"<b>{c.esc(brand['name'])}</b> · run {run['id']} · {run['finding_count']} findings · {str(run['finished_at'])[:10]}" if run is not None
+              else f"<b>{c.esc(brand['name'])}</b> · no analysis yet")
+else:
+    status = "No active deal"
+c.masthead(status)
 
 nav.run()

@@ -81,15 +81,16 @@ Optional environment variables are listed in `.env.example` (database path, uplo
 
 ### Design system
 
-Tokens live in `tell/ui/theme.py` (colour, type scale, spacing, radii, component states) and
-`.streamlit/config.toml` (base theme incl. the navy sidebar). Colour is semantic: cobalt for
-primary actions, active navigation and the order-ledger series; violet for seller-reported
-figures; emerald for refund-adjusted / favourable signals; coral only for material discrepancies
-and high-severity findings; amber for medium priority. Composition avoids uniform cards:
-typographic hero figures, ruled ledgers, an editorial brief, a workflow stepper, timelines and
-split panes are the building blocks (`tell/ui/components.py`), and every chart form is chosen
-for the question it answers (`tell/ui/charts.py`). Tables carry a `▲` flag column so meaning is
-never conveyed by colour alone.
+Tokens live in `tell/ui/theme.py` and `.streamlit/config.toml`. The workspace is dark and
+glass-surfaced — a near-black canvas with translucent panels and soft radial light — and Tell
+itself owns one luminous accent: *signal lime* for the brand mark, the italic serif tagline,
+primary actions and the active state. Analytical colour stays strictly semantic: periwinkle for
+the order ledger, violet for seller-reported figures, emerald for supported / favourable, coral
+only for discrepancies and high severity, amber for medium priority. Composition avoids uniform
+cards: a brand masthead, typographic hero figures, ruled ledgers, an editorial brief with
+serif-italic emphasis, a workflow stepper, timelines and split panes are the building blocks
+(`tell/ui/components.py`); every chart form is chosen for the question it answers
+(`tell/ui/charts.py`). Tables carry a `▲` flag column so meaning is never conveyed by colour alone.
 
 ## Demo dataset and planted scenarios
 

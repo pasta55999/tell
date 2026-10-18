@@ -157,6 +157,12 @@ def finding_row(f: pd.Series, cur: str, flat: bool = False) -> None:
     )
 
 
+def masthead(status_html: str) -> None:
+    """Brand strip at the top of every page: signal mark, wordmark, tagline and a live status chip."""
+    st.markdown(f'<div class="tell-masthead"><div class="brand">{theme.SIGNAL_ICON}<span class="name">Tell</span>'
+                f'<span class="tag">Every business has a tell.</span></div><div class="status"><span class="dot"></span>{status_html}</div></div>', unsafe_allow_html=True)
+
+
 # ---------------------------------------------------------------- v3 editorial blocks
 
 def identity(name: str, facts: list[tuple[str, str]]) -> None:
