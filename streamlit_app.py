@@ -7,30 +7,28 @@ import streamlit as st
 from tell import config
 from tell.db import repository as repo
 from tell.ui import state, theme
-from tell.ui.pages import advertising, copilot, financials, findings, inventory, overview, products, questions, reconciliation, reports, settings
+from tell.ui.pages import copilot, data_room, deals, financial_story, findings, operations, overview, questions, reports
 
 st.set_page_config(page_title="Tell", page_icon=":material/insights:", layout="wide", initial_sidebar_state="expanded")
 theme.inject_css()
 state.ensure_state()
 
-# (url slug, title, icon, renderer, group)
+# (key / url slug, title, icon, renderer, group)
 PAGES = [
-    ("", "Acquisition overview", ":material/dashboard:", overview.render, "Workspace"),
-    ("financials", "Financials", ":material/table_chart:", financials.render, "Analysis"),
-    ("reconciliation", "Revenue reconciliation", ":material/balance:", reconciliation.render, "Analysis"),
-    ("products", "Products & margins", ":material/inventory_2:", products.render, "Analysis"),
-    ("advertising", "Advertising", ":material/campaign:", advertising.render, "Analysis"),
-    ("inventory", "Inventory", ":material/warehouse:", inventory.render, "Analysis"),
-    ("findings", "Findings", ":material/troubleshoot:", findings.render, "Diligence"),
-    ("questions", "Seller questions", ":material/help_outline:", questions.render, "Diligence"),
-    ("reports", "Reports", ":material/description:", reports.render, "Diligence"),
-    ("copilot", "Analyst copilot", ":material/forum:", copilot.render, "Diligence"),
-    ("settings", "Settings & imports", ":material/settings:", settings.render, "System"),
+    ("deals", "Deals", ":material/work:", deals.render, "Pipeline"),
+    ("overview", "Overview", ":material/dashboard:", overview.render, "Active deal"),
+    ("financial_story", "Financial story", ":material/account_balance:", financial_story.render, "Active deal"),
+    ("operations", "Operations", ":material/inventory_2:", operations.render, "Active deal"),
+    ("findings", "Findings", ":material/troubleshoot:", findings.render, "Investigation"),
+    ("questions", "Seller questions", ":material/help_outline:", questions.render, "Investigation"),
+    ("reports", "Reports", ":material/description:", reports.render, "Investigation"),
+    ("copilot", "Ask the records", ":material/forum:", copilot.render, "Investigation"),
+    ("data_room", "Data room", ":material/folder_open:", data_room.render, "Sources"),
 ]
 
-pages = [st.Page(fn, title=title, icon=icon, url_path=slug or None, default=(slug == "")) for slug, title, icon, fn, _ in PAGES]
+pages = [st.Page(fn, title=title, icon=icon, url_path=None if key == "overview" else key, default=(key == "overview")) for key, title, icon, fn, _ in PAGES]
 nav = st.navigation(pages, position="hidden")
-st.session_state.pages = {(slug or "overview"): page for (slug, _, _, _, _), page in zip(PAGES, pages)}
+st.session_state.pages = {key: page for (key, _, _, _, _), page in zip(PAGES, pages)}
 
 with st.sidebar:
     st.markdown(f'<div class="tell-wordmark">{theme.SIGNAL_ICON}<span class="name">{config.APP_NAME}</span></div>'
@@ -38,7 +36,7 @@ with st.sidebar:
     conn = state.conn()
     brands = repo.list_brands(conn)
     if brands:
-        st.markdown('<div class="tell-side-label">Target business</div>', unsafe_allow_html=True)
+        st.markdown('<div class="tell-side-label">Active deal</div>', unsafe_allow_html=True)
         ids = [b["id"] for b in brands]
         names = {b["id"]: b["name"] + (" · demo" if b["is_demo"] else "") for b in brands}
         chosen = st.selectbox("Brand", ids, index=ids.index(st.session_state.brand_id), format_func=lambda i: names[i], label_visibility="collapsed")
@@ -58,7 +56,7 @@ with st.sidebar:
         else:
             st.markdown('<div class="tell-note">No analysis run yet</div>', unsafe_allow_html=True)
     current_group = None
-    for (slug, title, icon, fn, group), page in zip(PAGES, pages):
+    for (key, title, icon, fn, group), page in zip(PAGES, pages):
         if group != current_group:
             st.markdown(f'<div class="tell-side-label">{group}</div>', unsafe_allow_html=True)
             current_group = group

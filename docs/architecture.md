@@ -16,8 +16,9 @@ tell/
     context.py              lazily computed shared inputs for rules
     models.py               Finding / Evidence / Question (pydantic)
     rules/*.py              one module per analysis area; each exports run(ctx) -> ModuleResult
-    engine.py               run_analysis (persist run, findings, evidence, questions), compare_runs
+    engine.py               run_analysis (persist run, findings, evidence, questions), status updates with history, compare_runs
     questions.py            consolidated cross-finding seller questions
+    brief.py                investment intelligence brief assembled from stored findings (templated, evidence-linked)
   copilot/
     copilot.py              intent patterns -> handler functions -> templated Answer
     adapters.py             optional LLM adapter protocol + NullAdapter (default)
@@ -29,7 +30,7 @@ tell/
     components.py           KPI modules, pills, rows, insights, stat strips, tables
     charts.py               Plotly builders (reconciliation flow, variance, waterfall, roll-forward...)
     data.py, state.py       cached reads keyed by data hash; session state
-    pages/*.py              one module per screen
+    pages/                  deals, overview (command centre), financial_story, operations, findings, questions, reports, copilot, data_room
 evaluation/run_eval.py      precision / recall / F1 vs ground truth; writes EVALUATION.md
 tests/                      pytest suite (unit, integration, UI smoke via AppTest)
 data/demo/ground_truth.json labelled planted scenarios (never read by the app)
@@ -66,6 +67,7 @@ data/demo/ground_truth.json labelled planted scenarios (never read by the app)
 | findings | One row per finding per run; `finding_key` stable across runs | unique (run, finding_key); severity/status CHECKs |
 | finding_evidence | Source rows backing a finding | FK finding (cascade) |
 | diligence_questions | Per-finding and consolidated questions with status | unique (run, question_key) |
+| finding_events, question_events | Review history: status changes and notes with timestamps | FK finding / question (cascade) |
 | reports | Versioned report JSON per run | unique (run, version) |
 
 Foreign keys are enforced (`PRAGMA foreign_keys = ON`); deleting a brand cascades through all

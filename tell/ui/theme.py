@@ -189,6 +189,84 @@ section[data-testid="stSidebar"] div[data-baseweb="select"] svg {{ fill: {NAVY_M
 .tell-side-foot .who {{ font-size: 0.82rem; font-weight: 600; color: #fff; line-height: 1.2; }}
 .tell-side-foot .role {{ font-size: 0.72rem; color: {NAVY_MUTED}; }}
 
+
+/* ---------- v3: editorial composition ---------- */
+.tell-identity {{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 22px; padding-bottom: 14px; border-bottom: 2px solid var(--tell-ink); margin-bottom: 4px; }}
+.tell-identity .name {{ font-size: 1.9rem; font-weight: 750; letter-spacing: -0.03em; color: var(--tell-ink); line-height: 1.05; }}
+.tell-identity .fact {{ font-size: 0.78rem; color: var(--tell-ink-soft); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }}
+.tell-identity .fact b {{ color: var(--tell-ink); font-weight: 700; }}
+.tell-stage {{ display: flex; flex-wrap: wrap; gap: 0; margin: 10px 0 4px 0; border: 1px solid var(--tell-line); border-radius: 8px; overflow: hidden; background: var(--tell-surface); }}
+.tell-stage .step {{ flex: 1 1 150px; padding: 8px 12px; font-size: 0.74rem; color: var(--tell-muted); border-right: 1px solid var(--tell-line); display: flex; gap: 8px; align-items: center; }}
+.tell-stage .step:last-child {{ border-right: none; }}
+.tell-stage .step .n {{ width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--tell-line-strong); display: inline-flex; align-items: center; justify-content: center; font-size: 0.66rem; font-weight: 700; flex-shrink: 0; }}
+.tell-stage .step.done {{ color: var(--tell-ink); }}
+.tell-stage .step.done .n {{ background: var(--tell-emerald); border-color: var(--tell-emerald); color: #fff; }}
+.tell-stage .step.active {{ color: var(--tell-cobalt-deep); background: var(--tell-highlight); font-weight: 600; }}
+.tell-stage .step.active .n {{ background: var(--tell-cobalt); border-color: var(--tell-cobalt); color: #fff; }}
+.tell-stage .step.partial .n {{ border-color: var(--tell-amber); color: var(--tell-amber); }}
+.tell-stage .step .sub {{ font-weight: 400; color: var(--tell-muted); margin-left: auto; font-variant-numeric: tabular-nums; }}
+
+.tell-brief {{ border-top: 3px solid var(--tell-ink); padding-top: 14px; }}
+.tell-brief .kicker {{ font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tell-cobalt-deep); font-weight: 700; }}
+.tell-brief .lede {{ font-size: 1.35rem; font-weight: 650; line-height: 1.3; letter-spacing: -0.015em; color: var(--tell-ink); margin: 6px 0 14px 0; max-width: 60ch; }}
+.tell-brief .lede em {{ font-style: normal; color: var(--tell-coral); }}
+.tell-brief .item {{ display: grid; grid-template-columns: 26px 1fr; gap: 10px; padding: 9px 0; border-top: 1px solid var(--tell-line); font-size: 0.9rem; line-height: 1.5; color: var(--tell-ink); }}
+.tell-brief .item .n {{ font-size: 0.72rem; font-weight: 700; color: var(--tell-muted); padding-top: 3px; font-variant-numeric: tabular-nums; }}
+.tell-brief .item .tag {{ font-size: 0.66rem; letter-spacing: 0.07em; text-transform: uppercase; font-weight: 700; margin-right: 8px; }}
+.tell-brief .item .ref {{ color: var(--tell-muted); font-size: 0.76rem; margin-left: 6px; white-space: nowrap; }}
+
+.tell-hero {{ display: flex; flex-wrap: wrap; gap: 22px 36px; align-items: flex-end; padding: 6px 0 10px 0; }}
+.tell-hero .fig {{ min-width: 0; }}
+.tell-hero .fig .k {{ font-size: 0.7rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--tell-muted); font-weight: 650; }}
+.tell-hero .fig .v {{ font-size: clamp(1.4rem, 2vw, 2.1rem); font-weight: 750; letter-spacing: -0.03em; line-height: 1.05; color: var(--tell-ink); font-variant-numeric: tabular-nums; margin-top: 2px; }}
+.tell-hero .fig .v.sm {{ font-size: clamp(1.15rem, 1.5vw, 1.45rem); }}
+.tell-hero .fig .s {{ font-size: 0.78rem; color: var(--tell-ink-soft); margin-top: 3px; }}
+.tell-hero .fig.accent .v {{ color: var(--fig-color, var(--tell-ink)); }}
+
+.tell-ledger {{ width: 100%; border-collapse: collapse; font-size: 0.88rem; }}
+.tell-ledger td {{ padding: 7px 0 !important; border: none !important; border-bottom: 1px solid var(--tell-line) !important; vertical-align: top; background: transparent !important; color: var(--tell-ink); }}
+.tell-ledger tr {{ background: transparent !important; }}
+.tell-ledger td:last-child {{ text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; padding-left: 16px; }}
+.tell-ledger tr.total td {{ border-top: 2px solid var(--tell-ink) !important; border-bottom: none !important; font-weight: 700; }}
+.tell-ledger tr.flag td:last-child {{ color: var(--tell-coral); }}
+.tell-ledger .sub {{ color: var(--tell-muted); font-size: 0.76rem; display: block; font-weight: 400; }}
+
+.tell-timeline {{ position: relative; padding-left: 18px; }}
+.tell-timeline::before {{ content: ""; position: absolute; left: 5px; top: 6px; bottom: 6px; width: 2px; background: var(--tell-line); }}
+.tell-timeline .ev {{ position: relative; padding: 4px 0 12px 12px; font-size: 0.85rem; color: var(--tell-ink); }}
+.tell-timeline .ev::before {{ content: ""; position: absolute; left: -17px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: var(--ev-color, var(--tell-line-strong)); border: 2px solid var(--tell-canvas); }}
+.tell-timeline .ev .when {{ font-size: 0.72rem; color: var(--tell-muted); letter-spacing: 0.04em; text-transform: uppercase; font-weight: 650; }}
+.tell-timeline .ev .what {{ margin-top: 1px; line-height: 1.45; }}
+
+.tell-signal {{ display: grid; grid-template-columns: 6px 1fr auto; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--tell-line); align-items: start; }}
+.tell-signal .bar {{ width: 6px; border-radius: 3px; background: var(--sig-color, var(--tell-line-strong)); align-self: stretch; }}
+.tell-signal .t {{ font-size: 0.9rem; font-weight: 600; color: var(--tell-ink); line-height: 1.35; }}
+.tell-signal .m {{ font-size: 0.8rem; color: var(--tell-ink-soft); margin-top: 2px; line-height: 1.45; }}
+.tell-signal .impact {{ text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 0.95rem; white-space: nowrap; }}
+.tell-signal .impact small {{ display: block; font-size: 0.68rem; color: var(--tell-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }}
+
+.tell-listitem {{ padding: 8px 10px 8px 12px; border-left: 3px solid var(--li-color, var(--tell-line-strong)); margin: 0 0 4px 0; font-size: 0.86rem; line-height: 1.35; color: var(--tell-ink); background: transparent; border-radius: 0 6px 6px 0; }}
+.tell-listitem.active {{ background: var(--tell-highlight); font-weight: 600; }}
+.tell-listitem .k {{ font-size: 0.68rem; color: var(--tell-muted); letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; margin-right: 6px; }}
+.tell-listitem .sub {{ display: block; color: var(--tell-muted); font-size: 0.74rem; font-weight: 400; margin-top: 1px; }}
+
+.tell-srcmap {{ display: grid; grid-template-columns: 1.4fr 1fr 1fr 2fr; font-size: 0.85rem; border-top: 2px solid var(--tell-ink); }}
+.tell-srcmap > div {{ padding: 9px 10px 9px 0; border-bottom: 1px solid var(--tell-line); }}
+.tell-srcmap .h {{ font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tell-muted); font-weight: 700; }}
+.tell-srcmap .st {{ font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }}
+.tell-srcmap .st::before {{ content: ""; width: 9px; height: 9px; border-radius: 2px; background: var(--st-color); }}
+
+.tell-doc {{ max-width: 860px; }}
+.tell-doc .masthead {{ border-bottom: 3px solid var(--tell-ink); padding-bottom: 12px; margin-bottom: 8px; }}
+.tell-doc .masthead .t {{ font-size: 2rem; font-weight: 750; letter-spacing: -0.03em; line-height: 1.1; }}
+.tell-doc .masthead .s {{ color: var(--tell-ink-soft); font-size: 0.9rem; margin-top: 6px; }}
+.tell-doc h2 {{ font-size: 1.05rem !important; text-transform: uppercase; letter-spacing: 0.06em; color: var(--tell-cobalt-deep); margin-top: 1.8rem !important; }}
+.tell-doc .num {{ color: var(--tell-muted); margin-right: 8px; }}
+
+div[data-testid="stRadio"] label {{ padding: 5px 8px; }}
+div[data-baseweb="segmented-control"] {{ background: var(--tell-surface-alt); border-radius: 8px; }}
+.stTextInput input, .stSelectbox div[data-baseweb="select"] > div {{ border-radius: 8px; }}
+
 /* ---------- responsive ---------- */
 .tell-kpi .value {{ font-size: clamp(1.15rem, 1.6vw, 1.65rem); overflow-wrap: anywhere; }}
 @media (max-width: 1200px) {{

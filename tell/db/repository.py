@@ -9,6 +9,7 @@ import json
 import sqlite3
 from typing import Any, Sequence
 
+import numpy as np
 import pandas as pd
 
 SOURCE_TABLES = [
@@ -381,4 +382,76 @@ def import_history(conn: sqlite3.Connection, brand_id: int) -> pd.DataFrame:
         conn,
         "SELECT id, dataset, filename, row_count, imported_rows, rejected_rows, skipped_rows, status, imported_at, notes FROM import_files WHERE brand_id = ? ORDER BY id DESC",
         (brand_id,),
+    )
+
+
+# ----------------------------------------------------------------- investigation history / deals
+
+def finding_history(conn: sqlite3.Connection, finding_key: str) -> pd.DataFrame:
+    """All review events for a finding key across runs (newest first)."""
+    return fetch_df(
+        conn,
+        """SELECT e.id, e.finding_id, f.run_id, e.event_type, e.from_status, e.to_status, e.note, e.created_at
+           FROM finding_events e JOIN findings f ON f.id = e.finding_id WHERE e.finding_key = ? ORDER BY e.created_at DESC, e.id DESC""",
+        (finding_key,),
+    )
+
+
+def recent_events(conn: sqlite3.Connection, brand_id: int, limit: int = 12) -> pd.DataFrame:
+    """Recent review activity across findings and questions for the brand's runs."""
+    return fetch_df(
+        conn,
+        """SELECT * FROM (
+             SELECT 'finding' AS kind, e.created_at, e.from_status, e.to_status, e.note, f.title AS subject, f.finding_key AS ref, f.severity AS level
+             FROM finding_events e JOIN findings f ON f.id = e.finding_id JOIN analysis_runs r ON r.id = f.run_id WHERE r.brand_id = ?
+             UNION ALL
+             SELECT 'question', e.created_at, e.from_status, e.to_status, e.note, q.question, q.question_key, q.priority
+             FROM question_events e JOIN diligence_questions q ON q.id = e.question_id JOIN analysis_runs r ON r.id = q.run_id WHERE r.brand_id = ?
+           ) ORDER BY created_at DESC LIMIT ?""",
+        (brand_id, brand_id, limit),
+    )
+
+
+def related_findings(conn: sqlite3.Connection, run_id: int, finding_id: int) -> pd.DataFrame:
+    """Findings in the same run that share the subject, the exact period, the category, or overlap in period."""
+    f = get_finding(conn, finding_id)
+    if f is None:
+        return pd.DataFrame()
+    df = fetch_df(
+        conn,
+        """SELECT id, finding_key, rule_id, subject, title, severity, classification, status, category, period_start, period_end, estimated_impact
+           FROM findings WHERE run_id = ? AND id != ?""",
+        (run_id, finding_id),
+    )
+    if df.empty:
+        return df
+    ps, pe = f["period_start"] or "", f["period_end"] or ""
+    same_subject = df["subject"] == f["subject"]
+    same_month = (df["period_start"] == ps) & (df["period_end"] == pe) & (ps != "")
+    same_cat = df["category"] == f["category"]
+    overlap = (df["period_start"].fillna("") <= pe) & (df["period_end"].fillna("") >= ps) & (ps != "") & (ps == pe)
+    df = df.assign(link=np.select([same_subject, same_month, same_cat, overlap], ["same subject", "same period", "same category", "overlapping period"], default=""))
+    order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+    df = df[df["link"] != ""].assign(_s=lambda d: d["severity"].map(order)).sort_values(["_s", "finding_key"]).drop(columns="_s")
+    return df.reset_index(drop=True)
+
+
+def deal_summaries(conn: sqlite3.Connection) -> pd.DataFrame:
+    """One row per brand with diligence status for the Deals page."""
+    return fetch_df(
+        conn,
+        """SELECT b.id, b.name, b.slug, b.category, b.location, b.reporting_currency, b.is_demo, b.created_at,
+                  (SELECT COUNT(*) FROM orders o WHERE o.brand_id = b.id) AS orders,
+                  (SELECT MIN(substr(order_date,1,7)) FROM orders o WHERE o.brand_id = b.id) AS period_start,
+                  (SELECT MAX(substr(order_date,1,7)) FROM orders o WHERE o.brand_id = b.id) AS period_end,
+                  (SELECT COUNT(*) FROM import_files i WHERE i.brand_id = b.id) AS sources,
+                  (SELECT MAX(id) FROM analysis_runs r WHERE r.brand_id = b.id AND r.status = 'completed') AS last_run_id,
+                  (SELECT MAX(finished_at) FROM analysis_runs r WHERE r.brand_id = b.id AND r.status = 'completed') AS last_run_at,
+                  (SELECT COUNT(*) FROM findings f WHERE f.run_id = (SELECT MAX(id) FROM analysis_runs r WHERE r.brand_id = b.id AND r.status = 'completed')
+                     AND f.classification != 'observation' AND f.status NOT IN ('verified','dismissed')) AS open_findings,
+                  (SELECT COUNT(*) FROM findings f WHERE f.run_id = (SELECT MAX(id) FROM analysis_runs r WHERE r.brand_id = b.id AND r.status = 'completed')
+                     AND f.severity IN ('critical','high') AND f.status NOT IN ('verified','dismissed')) AS high_findings,
+                  (SELECT COUNT(*) FROM diligence_questions q WHERE q.run_id = (SELECT MAX(id) FROM analysis_runs r WHERE r.brand_id = b.id AND r.status = 'completed')
+                     AND q.status = 'pending') AS open_questions
+           FROM brands b ORDER BY b.id""",
     )

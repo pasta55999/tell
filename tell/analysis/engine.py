@@ -86,15 +86,31 @@ def run_analysis(conn: sqlite3.Connection, brand_id: int, label: str | None = No
 
 
 def update_finding_status(conn: sqlite3.Connection, finding_id: int, status: str, note: str | None = None) -> None:
+    """Change a finding's review status and record the change in its investigation history."""
     if status not in ("detected", "needs_investigation", "verified", "dismissed"):
         raise ValueError("invalid status")
-    conn.execute("UPDATE findings SET status = ?, analyst_note = COALESCE(?, analyst_note) WHERE id = ?", (status, note, finding_id))
+    row = repo.get_finding(conn, finding_id)
+    if row is None:
+        raise ValueError("finding not found")
+    with transaction(conn):
+        conn.execute("UPDATE findings SET status = ?, analyst_note = COALESCE(?, analyst_note) WHERE id = ?", (status, note, finding_id))
+        if row["status"] != status or note:
+            conn.execute(
+                "INSERT INTO finding_events(finding_id, finding_key, event_type, from_status, to_status, note) VALUES (?,?,?,?,?,?)",
+                (finding_id, row["finding_key"], "status_change" if row["status"] != status else "note", row["status"], status, note),
+            )
 
 
 def update_question_status(conn: sqlite3.Connection, question_id: int, status: str, note: str | None = None) -> None:
     if status not in ("pending", "answered", "resolved"):
         raise ValueError("invalid status")
-    conn.execute("UPDATE diligence_questions SET status = ?, answer_note = COALESCE(?, answer_note) WHERE id = ?", (status, note, question_id))
+    row = repo.fetch_one(conn, "SELECT status FROM diligence_questions WHERE id = ?", (question_id,))
+    if row is None:
+        raise ValueError("question not found")
+    with transaction(conn):
+        conn.execute("UPDATE diligence_questions SET status = ?, answer_note = COALESCE(?, answer_note) WHERE id = ?", (status, note, question_id))
+        if row["status"] != status or note:
+            conn.execute("INSERT INTO question_events(question_id, from_status, to_status, note) VALUES (?,?,?,?)", (question_id, row["status"], status, note))
 
 
 def compare_runs(conn: sqlite3.Connection, base_run_id: int, new_run_id: int) -> dict:

@@ -157,6 +157,82 @@ def finding_row(f: pd.Series, cur: str, flat: bool = False) -> None:
     )
 
 
+# ---------------------------------------------------------------- v3 editorial blocks
+
+def identity(name: str, facts: list[tuple[str, str]]) -> None:
+    """Acquisition identity strip: big name plus uppercase key facts."""
+    fs = "".join(f'<span class="fact">{esc(k)} <b>{esc(v)}</b></span>' for k, v in facts if v)
+    st.markdown(f'<div class="tell-identity"><span class="name">{esc(name)}</span>{fs}</div>', unsafe_allow_html=True)
+
+
+def stepper(steps: list[tuple[str, str, str | None]]) -> None:
+    """Workflow stepper. steps: (label, state in done|active|partial|todo, sub-text)."""
+    items = "".join(f'<div class="step {s}"><span class="n">{i}</span>{esc(l)}{f"<span class=sub>{esc(sub)}</span>" if sub else ""}</div>'
+                    for i, (l, s, sub) in enumerate(steps, 1))
+    st.markdown(f'<div class="tell-stage">{items}</div>', unsafe_allow_html=True)
+
+
+def brief(kicker: str, lede_html: str, items: list[dict]) -> None:
+    """Investment intelligence brief. items: {tag, tag_color, text, ref}. lede_html may contain <em>."""
+    rows = ""
+    for i, it in enumerate(items, 1):
+        ref = f'<span class="ref">{esc(it["ref"])}</span>' if it.get("ref") else ""
+        rows += (f'<div class="item"><span class="n">{i:02d}</span><span><span class="tag" style="color:{it.get("tag_color", theme.MUTED)}">{esc(it["tag"])}</span>'
+                 f'{esc(it["text"])}{ref}</span></div>')
+    st.markdown(f'<div class="tell-brief"><div class="kicker">{esc(kicker)}</div><div class="lede">{lede_html}</div>{rows}</div>', unsafe_allow_html=True)
+
+
+def hero(figs: list[tuple], small: bool = False) -> None:
+    """Typographic figures. figs: (label, value, sub[, colour])."""
+    parts = []
+    for f in figs:
+        k, v, s = f[0], f[1], f[2]
+        color = f[3] if len(f) > 3 and f[3] else None
+        parts.append(f'<div class="fig{" accent" if color else ""}"{f" style=--fig-color:{color}" if color else ""}><div class="k">{esc(k)}</div>'
+                     f'<div class="v{" sm" if small else ""}">{esc(v)}</div>{f"<div class=s>{esc(s)}</div>" if s else ""}</div>')
+    st.markdown(f'<div class="tell-hero">{"".join(parts)}</div>', unsafe_allow_html=True)
+
+
+def ledger(rows: list[tuple], total: tuple | None = None) -> None:
+    """Aligned key/value rows. rows: (label, value, sub|None, flag:bool)."""
+    body = ""
+    for r in rows:
+        label, value = r[0], r[1]
+        sub = r[2] if len(r) > 2 and r[2] else None
+        flag = r[3] if len(r) > 3 else False
+        body += f'<tr class="{"flag" if flag else ""}"><td>{esc(label)}{f"<span class=sub>{esc(sub)}</span>" if sub else ""}</td><td>{esc(value)}</td></tr>'
+    if total:
+        body += f'<tr class="total"><td>{esc(total[0])}</td><td>{esc(total[1])}</td></tr>'
+    st.markdown(f'<table class="tell-ledger">{body}</table>', unsafe_allow_html=True)
+
+
+def timeline(events: list[tuple[str, str, str | None]]) -> None:
+    """events: (when, what_html_escaped_text, colour)."""
+    items = "".join(f'<div class="ev"{f" style=--ev-color:{c}" if c else ""}><div class="when">{esc(w)}</div><div class="what">{t}</div></div>' for w, t, c in events)
+    st.markdown(f'<div class="tell-timeline">{items}</div>', unsafe_allow_html=True)
+
+
+def signal(f: pd.Series, cur: str) -> None:
+    color = theme.SEVERITY_BAR.get(f["severity"], theme.LINE_STRONG)
+    impact = money(f["estimated_impact"], cur) if pd.notna(f.get("estimated_impact")) else "—"
+    st.markdown(f'<div class="tell-signal" style="--sig-color:{color}"><div class="bar"></div><div><div class="t">{esc(f["title"])}</div>'
+                f'<div class="m">{severity_pill(f["severity"])}{class_pill(f["classification"])}{esc(f["summary"])}</div></div>'
+                f'<div class="impact">{esc(impact)}<small>{"est. impact" if impact != "—" else "not quantified"}</small></div></div>', unsafe_allow_html=True)
+
+
+def list_item(key: str, title: str, sub: str | None, color: str, active: bool = False) -> str:
+    return (f'<div class="tell-listitem{" active" if active else ""}" style="--li-color:{color}"><span class="k">{esc(key)}</span>{esc(title)}'
+            f'{f"<span class=sub>{esc(sub)}</span>" if sub else ""}</div>')
+
+
+def source_map(rows: list[tuple[str, str, str, str]]) -> None:
+    """rows: (comparison, status_label, status_colour, detail)."""
+    head = '<div class="h">Comparison</div><div class="h">Status</div><div class="h">Coverage</div><div class="h">What the records say</div>'
+    body = "".join(f'<div>{esc(a)}</div><div><span class="st" style="--st-color:{col}">{esc(s)}</span></div><div>{esc(cov)}</div><div class="tell-caption">{esc(d)}</div>'
+                   for a, s, col, cov, d in rows)
+    st.markdown(f'<div class="tell-srcmap">{head}{body}</div>', unsafe_allow_html=True)
+
+
 def format_table(df: pd.DataFrame, money_cols: list[str] = (), pct_cols: list[str] = (), int_cols: list[str] = (), cur: str = "AED") -> pd.DataFrame:
     out = df.copy()
     for c in money_cols:

@@ -54,6 +54,13 @@ def currency() -> str:
     return b["reporting_currency"] if b else config.DEFAULT_CURRENCY
 
 
+def go(page_key: str) -> None:
+    """Navigate to a registered page (keys set by streamlit_app.py). No-op in isolated page tests."""
+    pages = st.session_state.get("pages")
+    if pages and page_key in pages:
+        st.switch_page(pages[page_key])
+
+
 def invalidate() -> None:
     """Clear cached dataframes after data changes."""
     st.cache_data.clear()

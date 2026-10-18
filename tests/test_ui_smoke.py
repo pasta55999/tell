@@ -8,7 +8,7 @@ import os
 import pytest
 from streamlit.testing.v1 import AppTest
 
-PAGES = ["overview", "financials", "reconciliation", "products", "advertising", "inventory", "findings", "questions", "reports", "copilot", "settings"]
+PAGES = ["deals", "overview", "financial_story", "operations", "findings", "questions", "reports", "copilot", "data_room"]
 
 
 @pytest.fixture(scope="module")
@@ -45,7 +45,8 @@ def test_settings_run_button_creates_new_run(db_path):
     conn = state.conn()
     brand = conn.execute("SELECT id FROM brands WHERE is_demo = 1").fetchone()[0]
     before = len(repo.list_runs(conn, brand))
-    at = _page("settings").run()
+    at = _page("data_room").run()
+    at.segmented_control[0].set_value("Analysis & demo data").run()
     btn = [b for b in at.button if b.label == "Run analysis now"]
     assert btn
     btn[0].click().run()
@@ -70,6 +71,37 @@ def test_findings_detail_and_status_update(db_path):
     save = [b for b in at.button if b.label == "Save"]
     save[0].click().run()
     assert not at.exception
+    from tell.ui import state
+    from tell.db import repository as repo
+    assert repo.scalar(state.conn(), "SELECT COUNT(*) FROM finding_events") >= 1
+
+
+def test_operations_views_render(db_path):
+    at = _page("operations").run()
+    for v in ["Refund patterns", "Advertising", "Inventory & suppliers"]:
+        at.segmented_control[0].set_value(v).run()
+        assert not at.exception, (v, [e.value for e in at.exception])
+
+
+def test_financial_story_views_render(db_path):
+    at = _page("financial_story").run()
+    for v in ["The financial picture", "Monthly ledger", "Definitions"]:
+        at.segmented_control[0].set_value(v).run()
+        assert not at.exception, (v, [e.value for e in at.exception])
+
+
+def test_questions_status_update_records_history(db_path):
+    from tell.ui import state
+    from tell.db import repository as repo
+    at = _page("questions").run()
+    sel = [s for s in at.selectbox if s.key and s.key.startswith("qs_")]
+    assert sel
+    sel[0].set_value("answered").run()
+    save = [b for b in at.button if b.label == "Save"]
+    save[0].click().run()
+    assert not at.exception
+    conn = state.conn()
+    assert repo.scalar(conn, "SELECT COUNT(*) FROM question_events") >= 1
 
 
 def test_copilot_answers_in_ui(db_path):

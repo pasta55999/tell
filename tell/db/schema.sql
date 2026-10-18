@@ -242,6 +242,28 @@ CREATE TABLE IF NOT EXISTS diligence_questions (
     UNIQUE (run_id, question_key)
 );
 
+CREATE TABLE IF NOT EXISTS finding_events (
+    id            INTEGER PRIMARY KEY,
+    finding_id    INTEGER NOT NULL REFERENCES findings(id) ON DELETE CASCADE,
+    finding_key   TEXT NOT NULL,
+    event_type    TEXT NOT NULL,              -- status_change | note
+    from_status   TEXT,
+    to_status     TEXT,
+    note          TEXT,
+    created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_finding_events_finding ON finding_events(finding_id);
+CREATE INDEX IF NOT EXISTS idx_finding_events_key ON finding_events(finding_key);
+
+CREATE TABLE IF NOT EXISTS question_events (
+    id            INTEGER PRIMARY KEY,
+    question_id   INTEGER NOT NULL REFERENCES diligence_questions(id) ON DELETE CASCADE,
+    from_status   TEXT,
+    to_status     TEXT,
+    note          TEXT,
+    created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS reports (
     id           INTEGER PRIMARY KEY,
     run_id       INTEGER NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,

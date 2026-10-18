@@ -10,7 +10,7 @@ from typing import Iterator
 from tell import config
 
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3   # v3: finding_events / question_events tables (created by schema.sql, no ALTER needed)
 
 # Additive migrations for databases created by earlier versions: (version, table, column, ddl)
 MIGRATIONS = [(2, "brands", "location", "ALTER TABLE brands ADD COLUMN location TEXT")]

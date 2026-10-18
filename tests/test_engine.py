@@ -144,3 +144,38 @@ def test_engine_runs_on_empty_brand(fresh_conn):
     rid = run_analysis(fresh_conn, 1)
     run = repo.get_run(fresh_conn, rid)
     assert run["status"] == "completed" and run["finding_count"] == 0
+
+
+def test_status_change_is_recorded_in_history(demo_conn, run_id):
+    fid = int(repo.findings_for_run(demo_conn, run_id)["id"].iloc[2])
+    key = repo.get_finding(demo_conn, fid)["finding_key"]
+    update_finding_status(demo_conn, fid, "needs_investigation", "asked for GRNs")
+    update_finding_status(demo_conn, fid, "verified", "count confirmed")
+    hist = repo.finding_history(demo_conn, key)
+    assert len(hist) == 2
+    assert hist.iloc[0]["to_status"] == "verified" and hist.iloc[1]["from_status"] == "detected"
+    assert "verified" in repo.recent_events(demo_conn, repo.get_run(demo_conn, run_id)["brand_id"])["to_status"].tolist()
+
+
+def test_related_findings_are_structural(demo_conn, run_id):
+    df = repo.findings_for_run(demo_conn, run_id)
+    rev = df[df["finding_key"] == "REV-001:2025-07"].iloc[0]
+    rel = repo.related_findings(demo_conn, run_id, int(rev["id"]))
+    assert set(rel["link"]) <= {"same subject", "same period", "same category", "overlapping period"}
+    assert {"REV-001:2025-06", "REV-001:2025-08"} <= set(rel["finding_key"])      # same category
+    assert "REF-003:2025-07" in set(rel["finding_key"])                             # same period
+
+
+def test_brief_is_built_from_findings(demo_conn, brand_id, run_id):
+    from tell.analysis.brief import build_brief
+    br = build_brief(demo_conn, brand_id, run_id)
+    kinds = {i["kind"] for i in br["items"]}
+    assert {"divergence", "verify", "concentration", "next"} <= kinds
+    assert all(i["ref"] for i in br["items"])
+    assert any("2025-06, 2025-07, 2025-08" in i["text"] for i in br["items"])
+    assert br["high"] == 7 and br["material"] == 14
+
+
+def test_deal_summaries(demo_conn, run_id):
+    d = repo.deal_summaries(demo_conn)
+    assert len(d) >= 1 and d.iloc[0]["orders"] >= 1000 and d.iloc[0]["last_run_id"] is not None

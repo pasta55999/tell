@@ -33,7 +33,23 @@ streamlit run streamlit_app.py
 
 First launch creates `data/tell.db`, seeds the demo business and runs the initial analysis
 (about two seconds). The database persists across restarts; re-launching never duplicates the
-demo data. Reset it from **Settings -> Analysis & demo data** (requires typing `RESET`).
+demo data. Reset it from **Data room -> Analysis & demo data** (requires typing `RESET`).
+
+## How the workspace is organised
+
+The interface follows the investor's workflow rather than the data model:
+
+| Area | What it is for |
+|---|---|
+| **Deals** | Acquisition targets and their diligence status; create a target, edit its profile |
+| **Overview** | The acquisition command centre: identity strip, workflow stage, an evidence-linked *investment intelligence brief* built from the stored findings, the headline-to-supported-net-sales bridge, the signals to inspect first, and the investigation trail (runs, reviews, open questions) |
+| **Financial story** | *Where the numbers diverge* (annual bridge, three views of revenue, month-by-month variance, trace a month to its orders and refunds), *the financial picture* (sales vs COGS with margin, discount and refund rates), the monthly ledger, definitions |
+| **Operations** | Products & concentration (revenue vs gross-profit share), refund patterns (cohort/delay view, every refund by lag), advertising (spend vs attributable revenue with attribution limits), inventory & suppliers (roll-forward, invoice vs recorded cost) |
+| **Findings** | Split-view investigation workspace: search / filter / sort, a story visual chosen per rule, the figures, why it matters, how it was detected, evidence rows with underlying records, alternative explanations, review status with a timestamped history, related findings, seller questions; run-to-run comparison |
+| **Seller questions** | Questions grouped by theme or priority, each tied to the finding and figures that triggered it; open / answered / resolved with response notes |
+| **Reports** | An investment-ready document (brief, reconciliation, ranked findings, product & operational risks, methodology, seller questions, limitations), versioned, with PDF / JSON / CSV exports |
+| **Ask the records** | Rule-based copilot over the same calculations |
+| **Data room** | Sources & integrity (a source-agreement map: which independent sources agree, conflict or remain unverified), CSV import with mapping and validation, import history, analysis and demo controls |
 
 Optional environment variables are listed in `.env.example` (database path, upload limit).
 
@@ -65,13 +81,15 @@ Optional environment variables are listed in `.env.example` (database path, uplo
 
 ### Design system
 
-Tokens live in `tell/ui/theme.py` (colours, type scale, spacing, radii, shadows, component
-states) and `.streamlit/config.toml` (base theme incl. the navy sidebar). Colour is semantic:
-cobalt for primary actions, active navigation and the order-ledger series; violet for
-seller-reported figures and secondary series; emerald for refund-adjusted / favourable signals;
-coral only for material discrepancies and high-severity findings; amber for medium priority.
-Every chart uses the same palette and `theme.plotly_layout`; tables use tabular numerals and a
-`▲` flag column so meaning is never carried by colour alone.
+Tokens live in `tell/ui/theme.py` (colour, type scale, spacing, radii, component states) and
+`.streamlit/config.toml` (base theme incl. the navy sidebar). Colour is semantic: cobalt for
+primary actions, active navigation and the order-ledger series; violet for seller-reported
+figures; emerald for refund-adjusted / favourable signals; coral only for material discrepancies
+and high-severity findings; amber for medium priority. Composition avoids uniform cards:
+typographic hero figures, ruled ledgers, an editorial brief, a workflow stepper, timelines and
+split panes are the building blocks (`tell/ui/components.py`), and every chart form is chosen
+for the question it answers (`tell/ui/charts.py`). Tables carry a `▲` flag column so meaning is
+never conveyed by colour alone.
 
 ## Demo dataset and planted scenarios
 
@@ -119,7 +137,7 @@ not trigger (ADV-001, CON-002, INV-002, DQ-001) are covered by unit tests with c
 ## Tests
 
 ```bash
-pytest                                  # 91 tests, ~2 min (UI smoke tests use Streamlit AppTest)
+pytest                                  # 100 tests, ~2 min (UI smoke tests use Streamlit AppTest)
 pytest --ignore=tests/test_ui_smoke.py  # fast subset, ~20 s
 ```
 
@@ -143,7 +161,7 @@ Stack: Python 3.11, Streamlit, SQLite, pandas, Plotly, pydantic, ReportLab, pyte
 
 ## Importing your own data
 
-**Settings -> Import data** accepts CSVs for products, orders (one row per line item), refunds,
+**Data room -> Import data** accepts CSVs for products, orders (one row per line item), refunds,
 ad spend, seller statements, inventory snapshots and supplier receipts. Columns are auto-detected
 from common export names (Shopify-style `Lineitem sku`, `Financial Status`, etc.) and can be
 remapped; a template is downloadable per dataset. Rows failing validation are listed with the row
