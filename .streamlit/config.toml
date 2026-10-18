@@ -1,10 +1,25 @@
 [theme]
 base = "light"
-primaryColor = "#2F5D50"
-backgroundColor = "#FBFAF7"
-secondaryBackgroundColor = "#F3F1EB"
-textColor = "#24262B"
-font = "sans serif"
+primaryColor = "#4F5DFF"
+backgroundColor = "#F7F8FC"
+secondaryBackgroundColor = "#EEF0F9"
+textColor = "#17213A"
+linkColor = "#4F5DFF"
+borderColor = "#E1E5EF"
+dataframeBorderColor = "#E1E5EF"
+dataframeHeaderBackgroundColor = "#EEF0F9"
+baseRadius = "8px"
+buttonRadius = "8px"
+font = "Inter, -apple-system, 'Segoe UI', sans-serif"
+headingFont = "Inter, -apple-system, 'Segoe UI', sans-serif"
+chartCategoricalColors = ["#4F5DFF", "#8067F8", "#0B9F78", "#F06464", "#5E6B8C", "#9FB1FF"]
+
+[theme.sidebar]
+backgroundColor = "#111831"
+secondaryBackgroundColor = "#1C2546"
+textColor = "#E6E9F5"
+borderColor = "#27315A"
+dataframeHeaderBackgroundColor = "#1C2546"
 
 [server]
 headless = true

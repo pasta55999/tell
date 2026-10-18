@@ -9,13 +9,13 @@ from tell.analysis.engine import run_analysis
 from tell.data.demo_generator import DEMO_SLUG, generate_demo
 from tell.db import repository as repo
 from tell.ingest import DATASETS, detect_mapping, file_sha256, import_validated, parse_csv, template_csv, validate
-from tell.ui import components as c, data, state
+from tell.ui import components as c, data, state, theme
 
 
 def render() -> None:
     brand = state.brand()
     conn = state.conn()
-    c.page_header("Settings & imports", "Brand profile, CSV imports with column mapping and validation, import history and demo data.", eyebrow=brand["name"] if brand else "Tell")
+    c.page_header("Settings & imports", "CSV imports with column mapping and validation, import history, the target-business profile and demo data.", eyebrow=brand["name"] if brand else "Tell")
     tabs = st.tabs(["Import data", "Import history", "Brand profile", "Analysis & demo data"])
     with tabs[0]:
         _import_tab(conn, brand)
@@ -54,7 +54,7 @@ def _import_tab(conn, brand) -> None:
         st.markdown(f"**{upload.name}** · {len(df):,} rows · {len(df.columns)} columns")
         c.table(df.head(5), height=200)
         suggested = detect_mapping(list(df.columns), spec)
-        st.markdown('<div class="tell-eyebrow">Column mapping</div>', unsafe_allow_html=True)
+        c.section("Column mapping", "Suggested from common export headers; adjust where needed")
         mapping: dict[str, str | None] = {}
         cols = st.columns(3)
         options = ["— not mapped —"] + list(df.columns)
@@ -65,8 +65,9 @@ def _import_tab(conn, brand) -> None:
                 mapping[f.name] = None if choice == options[0] else choice
         result = validate(df, mapping, spec, conn, bid, sha, dayfirst)
         st.write("")
-        c.kpi_row([("Rows", f"{result.rows_total:,}", None), ("Valid, new", f"{len(result.valid):,}", None),
-                   ("Rejected", f"{result.error_rows:,}", "rows with errors"), ("Already in database", f"{result.existing_in_db:,}", "skipped")])
+        c.kpi_row([("Rows", f"{result.rows_total:,}", None, theme.COBALT), ("Valid, new", f"{len(result.valid):,}", None, theme.EMERALD),
+                   ("Rejected", f"{result.error_rows:,}", c.delta_text("rows with errors", "risk" if result.error_rows else "neutral"), theme.CORAL if result.error_rows else theme.LINE_STRONG),
+                   ("Already in database", f"{result.existing_in_db:,}", c.delta_text("skipped as duplicates", "neutral"), theme.SLATE)], plain=True)
         for w in result.warnings:
             st.warning(w)
         if result.errors:
@@ -101,17 +102,17 @@ def _brand_tab(conn, brand) -> None:
     with st.form("brand_form"):
         name = st.text_input("Brand name", value=brand["name"])
         category = st.text_input("Category", value=brand["category"] or "")
+        location = st.text_input("Location", value=brand["location"] or "", placeholder="City, Country")
         currency = st.selectbox("Reporting currency", ["AED", "USD", "EUR", "GBP", "SAR"], index=["AED", "USD", "EUR", "GBP", "SAR"].index(brand["reporting_currency"]) if brand["reporting_currency"] in ["AED", "USD", "EUR", "GBP", "SAR"] else 0)
         fy = st.number_input("Fiscal year starts in month", 1, 12, int(brand["fiscal_year_start_month"]))
         st.caption("Refund date convention: refunds are assigned to the month they were posted for reconciliation; cohort views by original order month are shown alongside.")
         if st.form_submit_button("Save profile", type="primary"):
-            conn.execute("UPDATE brands SET name = ?, category = ?, reporting_currency = ?, fiscal_year_start_month = ? WHERE id = ?",
-                         (name.strip() or brand["name"], category.strip() or None, currency, int(fy), int(brand["id"])))
+            conn.execute("UPDATE brands SET name = ?, category = ?, location = ?, reporting_currency = ?, fiscal_year_start_month = ? WHERE id = ?",
+                         (name.strip() or brand["name"], category.strip() or None, location.strip() or None, currency, int(fy), int(brand["id"])))
             state.invalidate()
             st.success("Saved.")
             st.rerun()
-    c.divider()
-    st.markdown("<h3>Add a brand</h3>", unsafe_allow_html=True)
+    c.section("Add a target business")
     with st.form("new_brand"):
         new_name = st.text_input("Name")
         new_cur = st.selectbox("Currency", ["AED", "USD", "EUR", "GBP", "SAR"])
@@ -130,7 +131,7 @@ def _brand_tab(conn, brand) -> None:
 
 
 def _demo_tab(conn, brand) -> None:
-    st.markdown("<h3>Analysis</h3>", unsafe_allow_html=True)
+    c.section("Analysis", "Runs are stored with a data hash and rule versions")
     c.caption(f"Database: {config.db_path()} (persists across restarts). Runs store the data hash and rule versions so results can be reproduced and compared.")
     label = st.text_input("Run label (optional)", placeholder="e.g. after seller's second data drop")
     if st.button("Run analysis now", type="primary"):
@@ -139,8 +140,7 @@ def _demo_tab(conn, brand) -> None:
         st.session_state.run_id = rid
         st.success(f"Run {rid} completed.")
         st.rerun()
-    c.divider()
-    st.markdown("<h3>Demo data</h3>", unsafe_allow_html=True)
+    c.section("Demo data", "Destructive: requires confirmation")
     c.caption("Saffron & Sage is a synthetic business generated deterministically (seed 20250101). Resetting deletes the demo brand, its imports, runs, findings and reports, then regenerates identical source data.")
     confirm = st.text_input("Type RESET to confirm", key="reset_confirm")
     if st.button("Reset demo data", disabled=confirm.strip() != "RESET"):

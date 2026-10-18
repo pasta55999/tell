@@ -60,7 +60,18 @@ Optional environment variables are listed in `.env.example` (database path, uplo
 | | |
 |---|---|
 | ![Reconciliation](docs/screenshots/reconciliation.png) | ![Findings](docs/screenshots/findings.png) |
-| ![Seller questions](docs/screenshots/questions.png) | ![Copilot](docs/screenshots/copilot.png) |
+| ![Seller questions](docs/screenshots/questions.png) | ![Products](docs/screenshots/products.png) |
+| ![Inventory](docs/screenshots/inventory.png) | ![Copilot](docs/screenshots/copilot.png) |
+
+### Design system
+
+Tokens live in `tell/ui/theme.py` (colours, type scale, spacing, radii, shadows, component
+states) and `.streamlit/config.toml` (base theme incl. the navy sidebar). Colour is semantic:
+cobalt for primary actions, active navigation and the order-ledger series; violet for
+seller-reported figures and secondary series; emerald for refund-adjusted / favourable signals;
+coral only for material discrepancies and high-severity findings; amber for medium priority.
+Every chart uses the same palette and `theme.plotly_layout`; tables use tabular numerals and a
+`▲` flag column so meaning is never carried by colour alone.
 
 ## Demo dataset and planted scenarios
 

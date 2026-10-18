@@ -1,101 +1,210 @@
 from __future__ import annotations
 
-import html
+import json
 
+import pandas as pd
 import streamlit as st
 
 from tell.analysis import metrics
 from tell.analysis.engine import run_analysis
-from tell.ui import charts, components as c, data, state
+from tell.analysis.rules.revenue import attribute_variance
+from tell.db import repository as repo
+from tell.ui import charts, components as c, data, state, theme
+
+
+def _go(page: str) -> None:
+    if st.session_state.get("pages"):
+        st.switch_page(st.session_state.pages[page])
 
 
 def render() -> None:
     brand = state.brand()
     if brand is None:
-        c.page_header("Overview")
-        c.empty_state("No brand yet", "Add a brand in Settings or reset the demo data to begin.")
+        c.page_header("Acquisition overview")
+        c.empty_state("No target business yet", "Add a brand in Settings or reset the demo data to begin.")
         return
     bid, cur = int(brand["id"]), brand["reporting_currency"]
     h = data.data_hash(bid)
     fin = data.financials(bid, h)
     run = state.run()
-    c.page_header(brand["name"], f"{brand['category'] or ''} · reporting currency {cur}" + (f" · {fin['period'].iloc[0]} to {fin['period'].iloc[-1]}" if not fin.empty else ""),
-                  eyebrow="Acquisition diligence workspace")
-    if brand["is_demo"]:
-        c.note("Synthetic demo business. All figures are generated; nothing here describes a real company.")
+    conn = state.conn()
 
-    if fin.empty:
-        if c.empty_state("No orders imported", "Import orders, refunds, advertising and statements in Settings, or reset the demo dataset.", "Go to Settings") and st.session_state.get("pages"):
-            st.switch_page(st.session_state.pages["settings"])
-        return
-
-    t = metrics.period_totals(fin)
-    h1, h2 = fin.head(len(fin) // 2), fin.tail(len(fin) // 2)
-    growth = (h2["gross_sales"].sum() / h1["gross_sales"].sum() - 1) * 100 if h1["gross_sales"].sum() else None
-    gm1 = (h1["gross_sales"].sum() - h1["cogs"].sum()) / h1["gross_sales"].sum() * 100 if h1["gross_sales"].sum() else None
-    gm2 = (h2["gross_sales"].sum() - h2["cogs"].sum()) / h2["gross_sales"].sum() * 100 if h2["gross_sales"].sum() else None
-    c.kpi_row([
-        ("Net sales", c.money(t["net_sales"], cur), f"{t['months']} months · {t['orders_completed']:,} orders"),
-        ("Gross margin", c.pct(t["gross_margin_pct"]), f"H2 vs H1 {gm2 - gm1:+.1f}pp" if gm1 is not None and gm2 is not None else None),
-        ("Advertising", c.pct(t["ad_pct_of_gross_sales"]) + " of sales", c.money(t["ad_spend"], cur)),
-        ("Contribution proxy", c.money(t["contribution_proxy"], cur), "gross profit less advertising"),
-    ])
-    st.write("")
-
+    # ---------------- header
     left, right = st.columns([3, 2], gap="large")
     with left:
-        st.markdown("<h3>Net sales and gross margin</h3>", unsafe_allow_html=True)
-        st.plotly_chart(charts.revenue_margin(fin, cur), width="stretch", config={"displayModeBar": False})
-        if growth is not None:
-            c.caption(f"Second-half gross sales {growth:+.0f}% versus first half. Net sales = gross sales less refunds posted in the month.")
+        status_dot = theme.EMERALD if run is not None else theme.AMBER
+        status_txt = (f"Analysis run {run['id']} · updated {str(run['finished_at'])[:16].replace('T', ' ')} UTC" if run is not None else "No analysis run yet")
+        meta = [(brand["name"], None), (" · ".join(x for x in [brand["location"], cur] if x), None)]
+        if not fin.empty:
+            meta.append((f"{fin['period'].iloc[0]} to {fin['period'].iloc[-1]}", None))
+        meta.append((status_txt, status_dot))
+        c.page_header("Acquisition overview", eyebrow="Target business", meta=meta)
     with right:
-        st.markdown("<h3>Reconciliation status</h3>", unsafe_allow_html=True)
-        rec = fin[fin["reported_revenue"].notna()]
-        if rec.empty:
-            c.caption("No seller statements imported; revenue reconciliation not available.")
-        else:
-            breaches = rec[rec["revenue_variance_pct"].abs() >= 2]
-            var = float(rec["revenue_variance"].sum())
-            c.kpi("Seller-reported vs supported", c.money(var, cur) if var >= 0 else "-" + c.money(-var, cur),
-                  f"{len(breaches)} of {len(rec)} months breach the 2% threshold")
-            if not breaches.empty:
-                c.caption("Months: " + ", ".join(breaches["period"]) + ". Open Revenue Reconciliation for the bridge and the records.")
-            else:
-                c.caption("All reported months reconcile within tolerance.")
-        cov, score, label = data.coverage_info(bid, h)
-        c.kpi("Data coverage", f"{score}/100", label + ("" if score >= 95 else " · see Settings for gaps"))
+        with st.container(horizontal=True, horizontal_alignment="right"):
+            if st.button("Import data", key="ov_import", icon=":material/upload_file:"):
+                _go("settings")
+            if st.button("Run analysis", type="primary", key="ov_run", icon=":material/play_arrow:"):
+                with st.spinner("Reconciling records and running rules..."):
+                    st.session_state.run_id = run_analysis(conn, bid)
+                st.rerun()
+    if brand["is_demo"]:
+        c.note("Synthetic demo business generated by Tell. Nothing here describes a real company.")
 
-    c.divider()
-    st.markdown("<h3>What deserves attention</h3>", unsafe_allow_html=True)
-    if run is None:
-        if c.empty_state("No analysis run yet", "Run the analysis to reconcile the records and surface findings. Runs are stored and reproducible.", "Run analysis", key="ov_run"):
-            with st.spinner("Analysing records..."):
-                rid = run_analysis(state.conn(), bid)
-            st.session_state.run_id = rid
-            st.rerun()
+    if fin.empty:
+        st.write("")
+        if c.empty_state("No orders imported", "Import orders, refunds, advertising and statements to build the financial picture, or reset the demo dataset in Settings.", "Go to Settings & imports", key="ov_goset"):
+            _go("settings")
         return
-    f = data.findings(int(run["id"]))
-    material = f[f["classification"] != "observation"]
-    top = material.head(3)
-    a, b = st.columns([3, 2], gap="large")
-    with a:
-        if top.empty:
-            c.caption("No material findings in this run.")
-        for _, row in top.iterrows():
-            c.finding_row(row, cur)
-        st.write("")
-        if st.button("Open all findings", key="ov_findings") and st.session_state.get("pages"):
-            st.switch_page(st.session_state.pages["findings"])
-    with b:
-        sev = f["severity"].value_counts()
-        obs = int((f["classification"] == "observation").sum())
-        rows = "".join(f'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #E4E1D8">'
-                       f'<span>{c.severity_pill(s)}</span><span style="font-weight:600">{int(sev.get(s, 0))}</span></div>'
-                       for s in ["critical", "high", "medium", "low", "info"] if sev.get(s, 0))
-        st.markdown(f'<div class="tell-panel"><div class="tell-eyebrow">Run {run["id"]} · {str(run["finished_at"])[:16].replace("T", " ")} UTC</div>{rows}'
-                    f'<div class="tell-note" style="margin-top:8px">{len(material)} material findings · {obs} observations · data hash {html.escape(str(run["data_hash"]))}</div></div>',
-                    unsafe_allow_html=True)
-        st.write("")
-        next_q = material.iloc[0] if not material.empty else None
-        if next_q is not None:
-            c.caption("Investigate next: " + str(next_q["next_action"]))
+
+    # ---------------- financial snapshot
+    t = metrics.period_totals(fin)
+    rec = fin[fin["reported_revenue"].notna()]
+    f = data.findings(int(run["id"])) if run is not None else pd.DataFrame()
+    open_f = f[~f["status"].isin(["verified", "dismissed"]) & (f["classification"] != "observation")] if not f.empty else pd.DataFrame()
+    h1, h2 = fin.head(len(fin) // 2), fin.tail(len(fin) // 2)
+    gm = lambda d: (d["gross_sales"].sum() - d["cogs"].sum()) / d["gross_sales"].sum() * 100 if d["gross_sales"].sum() else None  # noqa: E731
+    gm1, gm2 = gm(h1), gm(h2)
+
+    st.write("")
+    c.section("Financial snapshot", f"{t['months']} months · {t['orders_completed']:,} completed orders")
+    if rec.empty:
+        reported_kpi = ("Reported revenue", "n/a", c.delta_text("No seller statements imported", "neutral"), theme.VIOLET)
+        reconciled_kpi = ("Reconciled revenue", c.money(t["net_sales"], cur), c.delta_text("Net sales from order and refund records", "neutral"), theme.COBALT)
+    else:
+        reported, reconciled = float(rec["reported_revenue"].sum()), float(rec["net_sales"].sum())
+        var, var_pct = reported - reconciled, (reported / reconciled - 1) * 100 if reconciled else 0
+        breaches = rec[rec["revenue_variance_pct"].abs() >= 2]
+        tone = "risk" if abs(var_pct) >= 2 or len(breaches) else "good"
+        reported_kpi = ("Reported revenue", c.money(reported, cur),
+                        c.delta_text(f"{c.signed_money(var, cur)} ({var_pct:+.1f}%) vs reconciled · {len(breaches)} month(s) breach 2%", tone), theme.VIOLET)
+        reconciled_kpi = ("Reconciled revenue", c.money(reconciled, cur), c.delta_text("Order-ledger gross sales less refunds posted", "neutral"), theme.COBALT)
+    margin_delta = (c.delta_text(f"{gm2 - gm1:+.1f}pp second half vs first half", "down" if gm2 - gm1 <= -1 else "up" if gm2 - gm1 >= 1 else "neutral")
+                    if gm1 is not None and gm2 is not None else None)
+    if f.empty:
+        findings_kpi = ("Open findings", "—", c.delta_text("Run the analysis to detect findings", "neutral"), theme.LINE_STRONG)
+    else:
+        hi = int(open_f["severity"].isin(["critical", "high"]).sum())
+        med = int((open_f["severity"] == "medium").sum())
+        findings_kpi = ("Open findings", str(len(open_f)), c.delta_text(f"{hi} high · {med} medium · {int((f['classification'] == 'observation').sum())} observations", "risk" if hi else "neutral"),
+                        theme.CORAL if hi else theme.AMBER if med else theme.EMERALD)
+    c.kpi_row([reported_kpi, reconciled_kpi, ("Gross margin", c.pct(t["gross_margin_pct"]), margin_delta, theme.EMERALD if (gm2 or 0) >= (gm1 or 0) else theme.AMBER), findings_kpi])
+
+    # ---------------- where the story doesn't add up
+    c.section("Where the story doesn't add up", "Seller-reported revenue against the order ledger and refund-adjusted net sales")
+    if rec.empty:
+        c.panel("Reconciliation needs seller statements", "Import the seller's monthly management accounts to compare reported revenue with the figure the order and refund records support.", "tint")
+    else:
+        scope_options = ["All reported months"] + list(rec["period"])
+        breaches = rec[rec["revenue_variance_pct"].abs() >= 2]
+        sel_col, _ = st.columns([2, 5])
+        with sel_col:
+            scope = st.selectbox("Period", scope_options, index=0, key="ov_scope", label_visibility="collapsed")
+        sub = rec if scope == scope_options[0] else rec[rec["period"] == scope]
+        totals = {"reported": float(sub["reported_revenue"].sum()), "gross": float(sub["gross_sales"].sum()), "net": float(sub["net_sales"].sum()),
+                  "refunds": float(sub["refunds_posted"].sum()), "cancelled": float(sub["cancelled_value"].sum())}
+        a, b = st.columns([3, 2], gap="large")
+        with a:
+            st.plotly_chart(charts.reconciliation_flow(totals, cur), width="stretch", config={"displayModeBar": False})
+        with b:
+            gap_rep = totals["reported"] - totals["net"]
+            gap_pct = gap_rep / totals["net"] * 100 if totals["net"] else 0
+            c.stat_strip([
+                ("Reported − net sales", c.signed_money(gap_rep, cur), f"{gap_pct:+.1f}% of net sales", theme.CORAL if abs(gap_pct) >= 2 else theme.EMERALD),
+                ("Refunds posted", c.money(totals["refunds"], cur), "deducted to reach net sales", theme.EMERALD),
+                ("Reported − gross sales", c.signed_money(totals["reported"] - totals["gross"], cur), "before refunds", theme.VIOLET),
+                ("Cancelled orders", c.money(totals["cancelled"], cur), "excluded from the ledger", theme.SLATE),
+            ])
+            st.write("")
+            if scope == scope_options[0]:
+                if breaches.empty:
+                    c.insight("Every reported month reconciles within the 2% tolerance.", "emerald")
+                else:
+                    labels = [attribute_variance(r)[0] for _, r in breaches.iterrows()]
+                    common = max(set(l for l in labels if l), key=labels.count) if any(labels) else None
+                    txt = f"{len(breaches)} of {len(rec)} months breach the 2% threshold ({', '.join(breaches['period'])}), together {c.signed_money(float(breaches['revenue_variance'].sum()), cur)}."
+                    txt += f" In each case the gap matches {common}: a definitional difference to confirm with the seller, not yet a confirmed misstatement." if common else ""
+                    c.insight(txt, "coral")
+            else:
+                row = sub.iloc[0]
+                label, residual = attribute_variance(row)
+                if abs(row["revenue_variance_pct"]) < 2:
+                    c.insight(f"{scope}: variance {row['revenue_variance_pct']:+.1f}% is within tolerance.", "emerald")
+                elif label:
+                    c.insight(f"{scope}: reported exceeds supported by {c.money(row['revenue_variance'], cur)} ({row['revenue_variance_pct']:+.1f}%). The gap matches {label} (residual {c.money(residual, cur)}).", "coral")
+                else:
+                    c.insight(f"{scope}: variance {c.money(row['revenue_variance'], cur)} is not explained by refunds, cancellations, shipping or discounts.", "coral")
+        if st.button("Open full reconciliation", key="ov_rec"):
+            _go("reconciliation")
+
+    # ---------------- priority signals
+    c.section("Priority signals", "Ranked by severity, then estimated impact · observations excluded")
+    if run is None:
+        if c.empty_state("No analysis run yet", "Run the analysis to reconcile the records and surface findings. Runs are stored and reproducible.", "Run analysis now", key="ov_run2"):
+            with st.spinner("Analysing records..."):
+                st.session_state.run_id = run_analysis(conn, bid)
+            st.rerun()
+    else:
+        material = f[f["classification"] != "observation"].head(4)
+        if material.empty:
+            c.panel("No material findings", "The rules did not raise any discrepancy or suspected risk on this data.", "emerald")
+        for _, row in material.iterrows():
+            rc, bc = st.columns([6, 1])
+            with rc:
+                c.finding_row(row, cur)
+            with bc:
+                st.write("")
+                if st.button("Inspect", key=f"ov_insp_{row['id']}", width="stretch"):
+                    st.session_state.selected_finding = int(row["id"])
+                    _go("findings")
+        if st.button("All findings", key="ov_findings"):
+            _go("findings")
+
+    # ---------------- supporting sections
+    c.divider()
+    s1, s2 = st.columns(2, gap="large")
+    with s1:
+        c.section("Questions to ask the seller")
+        if run is None:
+            c.caption("Generated from findings after the first run.")
+        else:
+            qs = repo.questions_for_run(conn, int(run["id"]))
+            qs = qs[qs["status"] != "resolved"].head(3)
+            for _, q in qs.iterrows():
+                st.markdown(f'<div class="tell-row flat" style="--row-accent:{theme.PRIORITY_COLORS[q["priority"]][0]}">{c.priority_pill(q["priority"])}'
+                            f'<div class="meta" style="color:{theme.INK}">{c.esc(q["question"])}</div></div>', unsafe_allow_html=True)
+            if st.button("Seller question list", key="ov_q"):
+                _go("questions")
+        c.section("Recent analysis activity")
+        runs = repo.list_runs(conn, bid)[:4]
+        for r in runs:
+            skipped = json.loads(r["skipped"]) if r["skipped"] else {}
+            n_skip = len(skipped.get("skipped", []))
+            tone = theme.EMERALD if r["status"] == "completed" else theme.CORAL
+            st.markdown(f'<div class="tell-row flat" style="--row-accent:{tone}"><div class="meta"><b style="color:{theme.INK}">Run {r["id"]}</b> · {c.esc(str(r["finished_at"] or r["started_at"])[:16].replace("T", " "))} UTC'
+                        f' · {int(r["finding_count"])} findings · data {c.esc(r["data_hash"])}{" · " + c.esc(r["label"]) if r["label"] else ""}{f" · {n_skip} analyses skipped" if n_skip else ""}</div></div>', unsafe_allow_html=True)
+    with s2:
+        c.section("Key product & SKU risks")
+        prod = data.products(bid, h)
+        if prod.empty:
+            c.caption("No product sales.")
+        else:
+            top = prod.iloc[0]
+            eligible = prod[prod["units"] >= 30]
+            worst_ret = eligible.sort_values("return_rate_pct", ascending=False).iloc[0] if not eligible.empty else None
+            low_margin = eligible.sort_values("gross_margin_pct").iloc[0] if not eligible.empty else None
+            portfolio_rr = prod["refunded_units"].sum() / prod["units"].sum() * 100 if prod["units"].sum() else 0
+            items = [(theme.VIOLET, f"{top['sku']} {top['name']}", f"{top['revenue_share_pct']:.1f}% of gross sales · top-3 {prod.head(3)['revenue_share_pct'].sum():.0f}%", "Concentration")]
+            if worst_ret is not None:
+                items.append((theme.CORAL if worst_ret["return_rate_pct"] >= max(10, 2 * portfolio_rr) else theme.SLATE, f"{worst_ret['sku']} {worst_ret['name']}",
+                              f"Return rate {worst_ret['return_rate_pct']:.1f}% vs {portfolio_rr:.1f}% portfolio · {int(worst_ret['refunded_units'])} of {int(worst_ret['units'])} units", "Returns"))
+            if low_margin is not None:
+                items.append((theme.AMBER, f"{low_margin['sku']} {low_margin['name']}", f"Lowest gross margin {low_margin['gross_margin_pct']:.1f}% · {low_margin['revenue_share_pct']:.1f}% of sales", "Margin"))
+            for color, title, meta, tag in items:
+                st.markdown(f'<div class="tell-row flat" style="--row-accent:{color}"><span class="tell-chip">{tag}</span><div class="title" style="margin-top:4px">{c.esc(title)}</div><div class="meta">{c.esc(meta)}</div></div>', unsafe_allow_html=True)
+            if st.button("Products & margins", key="ov_prod"):
+                _go("products")
+        c.section("Detailed analysis")
+        if st.session_state.get("pages"):
+            for key, label in [("financials", "Monthly P&L, margins and contribution proxy"), ("advertising", "Spend by channel, intensity and attribution limits"),
+                               ("inventory", "Stock roll-forward and supplier cost reconciliation"), ("reports", "Diligence report and exports")]:
+                st.page_link(st.session_state.pages[key], label=label, icon=":material/arrow_forward:")

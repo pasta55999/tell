@@ -10,7 +10,10 @@ from typing import Iterator
 from tell import config
 
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+
+# Additive migrations for databases created by earlier versions: (version, table, column, ddl)
+MIGRATIONS = [(2, "brands", "location", "ALTER TABLE brands ADD COLUMN location TEXT")]
 
 
 def connect(path: Path | str | None = None) -> sqlite3.Connection:
@@ -31,6 +34,11 @@ def connect(path: Path | str | None = None) -> sqlite3.Connection:
 def init_db(conn: sqlite3.Connection) -> None:
     """Create tables if missing and record the schema version. Safe to call repeatedly."""
     conn.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
+    for version, table, column, ddl in MIGRATIONS:
+        cols = {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+        if column not in cols:
+            conn.execute(ddl)
+        conn.execute("INSERT OR IGNORE INTO schema_migrations(version) VALUES (?)", (version,))
     conn.execute("INSERT OR IGNORE INTO schema_migrations(version) VALUES (?)", (SCHEMA_VERSION,))
 
 

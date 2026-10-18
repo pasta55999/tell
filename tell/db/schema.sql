@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS brands (
     name               TEXT NOT NULL,
     category           TEXT,
     description        TEXT,
+    location           TEXT,
     reporting_currency TEXT NOT NULL DEFAULT 'AED',
     fiscal_year_start_month INTEGER NOT NULL DEFAULT 1 CHECK (fiscal_year_start_month BETWEEN 1 AND 12),
     date_convention    TEXT NOT NULL DEFAULT 'posting_date',  -- how refunds are assigned to periods

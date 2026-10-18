@@ -25,7 +25,10 @@ tell/
     builder.py              structured report dict from a stored run; versioned save
     exports.py              JSON / CSV (formula-safe) / PDF (ReportLab)
   ui/
-    theme.py, components.py, charts.py, data.py (cached reads), state.py
+    theme.py                design tokens + global CSS (navy sidebar, cobalt/violet/emerald/coral semantics)
+    components.py           KPI modules, pills, rows, insights, stat strips, tables
+    charts.py               Plotly builders (reconciliation flow, variance, waterfall, roll-forward...)
+    data.py, state.py       cached reads keyed by data hash; session state
     pages/*.py              one module per screen
 evaluation/run_eval.py      precision / recall / F1 vs ground truth; writes EVALUATION.md
 tests/                      pytest suite (unit, integration, UI smoke via AppTest)
