@@ -1,0 +1,24 @@
+[project]
+name = "tell"
+version = "0.1.0"
+description = "Tell - acquisition diligence intelligence for e-commerce businesses. Every business has a tell."
+requires-python = ">=3.11"
+readme = "README.md"
+dependencies = [
+  "streamlit>=1.38,<2",
+  "pandas>=2.2,<3",
+  "numpy>=1.26,<3",
+  "plotly>=5.22,<6",
+  "pydantic>=2.7,<3",
+  "reportlab>=4.1,<5",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.setuptools.packages.find]
+include = ["tell*"]

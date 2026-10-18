@@ -1,0 +1,143 @@
+{
+  "dataset": "Saffron & Sage (synthetic demo)",
+  "generator": "tell/data/demo_generator.py",
+  "seed": 20250101,
+  "currency": "AED",
+  "period": "2025-01..2025-12",
+  "note": "Labelled scenarios planted in the demo dataset. This file is used ONLY by the evaluation suite and tests; the application never reads it to produce findings. Each scenario lists the finding keys (rule_id:subject) the engine is expected to produce. 'primary' keys are required for the scenario to count as detected; 'secondary' keys are acceptable additional detections caused by the same planted facts and are not counted as false positives.",
+  "scenarios": [
+    {
+      "id": "S1",
+      "name": "Seller-reported revenue overstated",
+      "description": "For 2025-06, 2025-07 and 2025-08 the seller's monthly revenue figure equals gross sales (before refunds) plus the value of cancelled orders, instead of net sales.",
+      "records": "seller_statements.period in (2025-06, 2025-07, 2025-08); orders with status='cancelled' and refunds posted in those months",
+      "expected_severity": "high",
+      "expected_classification": "discrepancy",
+      "detection_logic": "REV-001: |reported_revenue - net_sales| / net_sales >= 2%; variance attribution should match 'refunds posted + cancelled orders'.",
+      "primary": ["REV-001:2025-06", "REV-001:2025-07", "REV-001:2025-08"],
+      "secondary": []
+    },
+    {
+      "id": "S2",
+      "name": "Refunds recorded after the original sale period",
+      "description": "45 'goodwill' refunds against July and August orders are posted between 5 and 28 October 2025 (60-110 days after sale).",
+      "records": "refunds with reason='goodwill refund' and refund_date in 2025-10",
+      "expected_severity": "high",
+      "expected_classification": "discrepancy",
+      "detection_logic": "REF-002: posting month with >= 8 refunds of lag > 45 days representing >= 25% of the month's refund value.",
+      "primary": ["REF-002:2025-10"],
+      "secondary": ["REF-003:2025-07", "REF-003:2025-08"]
+    },
+    {
+      "id": "S3",
+      "name": "Product with unusually high return rate",
+      "description": "TEX-003 'Linen Throw - Sage' has an 18% refund probability per line (vs 4.5% for other products); 60% of its refunds carry the reason 'quality issue - pilling/shedding'.",
+      "records": "products.sku = 'TEX-003'; refund_items for that product",
+      "expected_severity": "high",
+      "expected_classification": "suspected_risk",
+      "detection_logic": "REF-001: return rate >= max(10%, 2x portfolio rate) with >= 30 units sold.",
+      "primary": ["REF-001:TEX-003"],
+      "secondary": []
+    },
+    {
+      "id": "S4",
+      "name": "Advertising understated in one seller statement",
+      "description": "The 2025-09 statement reports advertising at 55% of the platform-recorded spend.",
+      "records": "seller_statements.period = '2025-09'; ad_spend.period = '2025-09'",
+      "expected_severity": "high",
+      "expected_classification": "discrepancy",
+      "detection_logic": "ADV-002: |reported_ad_spend - sum(channel spend)| >= 10% of recorded spend.",
+      "primary": ["ADV-002:2025-09"],
+      "secondary": []
+    },
+    {
+      "id": "S5",
+      "name": "Revenue concentrated in one product",
+      "description": "CAN-001 'Signature Saffron Candle' carries a demand weight that gives it ~28% of gross sales.",
+      "records": "order_items for products.sku = 'CAN-001'",
+      "expected_severity": "medium",
+      "expected_classification": "suspected_risk",
+      "detection_logic": "CON-001: top SKU share >= 25% or top-3 share >= 50%.",
+      "primary": ["CON-001:CAN-001"],
+      "secondary": []
+    },
+    {
+      "id": "S6",
+      "name": "Declining gross margin despite growing revenue",
+      "description": "From July, unit costs recorded on order lines rise 8% (14% for candles) while prices are unchanged; order volume keeps growing.",
+      "records": "order_items.unit_cost for order_date >= 2025-07-01",
+      "expected_severity": "medium",
+      "expected_classification": "suspected_risk",
+      "detection_logic": "MAR-001: last-6-month gross margin at least 3pp below first-6-month margin while gross sales grew.",
+      "primary": ["MAR-001:2025-07..2025-12"],
+      "secondary": []
+    },
+    {
+      "id": "S7",
+      "name": "Period of unusually heavy discounting",
+      "description": "In May 2025, 70% of orders receive a 20-25% discount (vs 25% of orders at 10% in normal months).",
+      "records": "orders with order_date in 2025-05; line_discount on order_items",
+      "expected_severity": "medium",
+      "expected_classification": "suspected_risk",
+      "detection_logic": "DSC-001: discount rate >= 12% of GMS and robust z >= 3 vs other months.",
+      "primary": ["DSC-001:2025-05"],
+      "secondary": []
+    },
+    {
+      "id": "S8a",
+      "name": "Inventory shrinkage not supported by movements",
+      "description": "CER-002 month-end counts are 30 units per month lower than receipts/sales/returns support from August to December (cumulative -150).",
+      "records": "inventory_snapshots for CER-002, snapshot_date >= 2025-08-31",
+      "expected_severity": "high",
+      "expected_classification": "discrepancy",
+      "detection_logic": "INV-001 roll-forward: |recorded - expected| >= 5 units and >= 3% of opening + receipts.",
+      "primary": ["INV-001:CER-002"],
+      "secondary": []
+    },
+    {
+      "id": "S8b",
+      "name": "Phantom stock",
+      "description": "KIT-001 month-end counts are 60 units higher than movements support from September onward (a one-off positive adjustment that persists).",
+      "records": "inventory_snapshots for KIT-001, snapshot_date >= 2025-09-30",
+      "expected_severity": "medium",
+      "expected_classification": "discrepancy",
+      "detection_logic": "INV-001 roll-forward.",
+      "primary": ["INV-001:KIT-001"],
+      "secondary": []
+    },
+    {
+      "id": "S9",
+      "name": "Legitimate seasonal spike (hard negative)",
+      "description": "November 2025 order volume is 1.9x the trend (regional sales event) with a 15% promotion on 60% of orders, advertising scaled proportionally, normal refunds and stable AOV. December is 1.3x. These must NOT be raised as suspected risks.",
+      "records": "orders with order_date in 2025-11 and 2025-12",
+      "expected_severity": "info",
+      "expected_classification": "observation",
+      "detection_logic": "SEA-001 should classify the spike as a seasonal observation (severity info). Any REV/REF/DSC finding keyed to 2025-11 would be a false positive.",
+      "primary": ["SEA-001:2025-11"],
+      "secondary": ["SEA-001:2025-12"],
+      "must_not_flag": ["DSC-001:2025-11", "REV-001:2025-11", "REF-003:2025-11", "ADV-001:2025-11", "ADV-002:2025-11"],
+      "must_not_be_severity": ["critical", "high", "medium"]
+    },
+    {
+      "id": "S10",
+      "name": "Supplier cost not reflected in recorded unit cost",
+      "description": "Supplier receipts for DEC-001 from September are priced 15% above the unit cost still recorded on order lines (stale standard cost).",
+      "records": "supplier_receipts for DEC-001 with received_date >= 2025-09-01; order_items.unit_cost for DEC-001",
+      "expected_severity": "medium",
+      "expected_classification": "discrepancy",
+      "detection_logic": "INV-003: |receipt unit cost - avg recorded unit cost in the same month| >= 5%.",
+      "primary": ["INV-003:DEC-001"],
+      "secondary": []
+    }
+  ],
+  "known_clean": {
+    "description": "Facts that are deliberately clean so the engine should not raise findings on them.",
+    "items": [
+      "Seller-reported revenue in all months other than Jun-Aug is within +/-0.25% of net sales.",
+      "Seller-reported advertising in all months other than Sep is within +/-1% of recorded spend.",
+      "No product other than TEX-003 has an elevated refund probability.",
+      "Inventory counts for all SKUs other than CER-002 and KIT-001 reconcile exactly to movements.",
+      "Supplier receipt costs for all SKUs other than DEC-001 equal the recorded unit cost in the same month."
+    ]
+  }
+}

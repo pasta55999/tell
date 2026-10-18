@@ -1,0 +1,28 @@
+# Environment
+.venv/
+venv/
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# Local data / database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/local/
+exports/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
